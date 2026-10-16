@@ -1,0 +1,8 @@
+{
+  "gpu": "Tesla T4",
+  "vram_gb": 14.56,
+  "torch": "2.11.0+cu130",
+  "fp16_matmul_tflops": 24.0,
+  "fp32_matmul_tflops": 4.2,
+  "memory_bandwidth_gbs": 232.0
+}
