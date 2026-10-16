@@ -1,0 +1,8 @@
+torch
+numpy
+tokenizers
+tqdm
+wandb
+pytest
+ruff
+pre-commit
