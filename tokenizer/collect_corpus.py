@@ -30,4 +30,5 @@ with open(OUT, "w", encoding="utf-8") as f:
         n3 += 1
     print("english docs:", n3)
 
-print("corpus size MB:", round(os.path.getsize(OUT) / 1e6, 1))
+print("corpus size MB:", round(os.path.getsize(OUT) / 1e6, 1), flush=True)
+os._exit(0)
