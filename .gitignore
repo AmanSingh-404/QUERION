@@ -32,7 +32,7 @@ wandb/
 *.bin
 .env
 
-* text=auto eol=lf
+# * text=auto eol=lf
 
 # PyInstaller
 #   Usually these files are written by a python script from a template
