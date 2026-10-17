@@ -1,0 +1,19 @@
+{
+  "train": {
+    "total": 100000,
+    "kept": 67852,
+    "drop_not_select": 10243,
+    "drop_operationalerror": 21711,
+    "drop_programmingerror": 188,
+    "drop_integrityerror": 6,
+    "kept_pct": 67.9
+  },
+  "test": {
+    "total": 5851,
+    "kept": 4019,
+    "drop_not_select": 613,
+    "drop_operationalerror": 1211,
+    "drop_programmingerror": 8,
+    "kept_pct": 68.7
+  }
+}
