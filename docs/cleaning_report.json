@@ -1,0 +1,13 @@
+{
+  "files_in": 225879,
+  "chars_in": 1389635305,
+  "files_kept": 171044,
+  "chars_kept": 716550683,
+  "drop_too_short": 28921,
+  "drop_long_line": 7558,
+  "drop_data_dump": 17479,
+  "drop_non_english": 687,
+  "drop_low_alnum": 155,
+  "drop_nul_byte": 35,
+  "kept_pct": 75.7
+}
