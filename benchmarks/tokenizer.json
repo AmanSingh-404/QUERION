@@ -1,0 +1,23 @@
+{
+  "examples": 1000,
+  "chars": 484665,
+  "querion": {"vocab": 24000, "tokens": 129235, "chars_per_token": 3.75},
+  "gpt2": {
+    "vocab": 50257,
+    "tokens": 144065,
+    "chars_per_token": 3.36,
+    "querion_saving_pct": 10.3
+  },
+  "llama2": {
+    "vocab": 32000,
+    "tokens": 163328,
+    "chars_per_token": 2.97,
+    "querion_saving_pct": 20.9
+  },
+  "llama3": {
+    "vocab": 128256,
+    "tokens": 128005,
+    "chars_per_token": 3.79,
+    "querion_saving_pct": -1.0
+  }
+}
