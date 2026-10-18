@@ -1,0 +1,8 @@
+{
+  "spider_dev.jsonl": {
+    "items": 1034,
+    "sha256": "e36d65ab4db6f29e43a990f5955b87f8068de82a88dc6a781a913e3e9dc48d08",
+    "source": "xlangai/spider, validation split",
+    "license": "CC BY-SA 4.0"
+  }
+}
