@@ -1,0 +1,9 @@
+{
+  "gpu": "NVIDIA GeForce RTX 4050 Laptop GPU",
+  "vram_gb": 6.0,
+  "torch": "2.11.0+cu128",
+  "fp16_matmul_tflops": 23.3,
+  "bf16_matmul_tflops": 25.7,
+  "fp32_matmul_tflops": 6.4,
+  "memory_bandwidth_gbs": 174.3
+}

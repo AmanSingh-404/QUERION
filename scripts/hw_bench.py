@@ -38,6 +38,7 @@ result = {
     "vram_gb": round(props.total_memory / 1024**3, 2),
     "torch": torch.__version__,
     "fp16_matmul_tflops": round(bench_matmul(dtype=torch.float16), 1),
+    "bf16_matmul_tflops": round(bench_matmul(dtype=torch.bfloat16), 1),
     "fp32_matmul_tflops": round(bench_matmul(dtype=torch.float32), 1),
     "memory_bandwidth_gbs": round(bench_bandwidth(), 1),
 }
