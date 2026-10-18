@@ -42,15 +42,21 @@ def doc_hits(text, needles):
 
 def scan_pairs(path, q_key, s_key, needles):
     out = {"pairs": 0, "question_matches": 0, "sql_matches": 0}
+    bad, examples = [], []
     with open(path, encoding="utf-8") as f:
-        for line in f:
+        for i, line in enumerate(f):
             r = json.loads(line)
             out["pairs"] += 1
-            if needles.get(norm(r[q_key])) == "question":
-                out["question_matches"] += 1
-            if needles.get(norm(r[s_key])) == "sql":
-                out["sql_matches"] += 1
-    return out
+            q_hit = needles.get(norm(r[q_key])) == "question"
+            s_hit = needles.get(norm(r[s_key])) == "sql"
+            out["question_matches"] += int(q_hit)
+            out["sql_matches"] += int(s_hit)
+            if q_hit or s_hit:
+                bad.append(i)
+                if len(examples) < 5:
+                    examples.append(r[q_key])
+    out["examples"] = examples
+    return out, bad
 
 
 def main():
@@ -61,24 +67,31 @@ def main():
     needles = build_needles(rows)
     report = {"eval_items": len(rows), "needles": len(needles)}
 
-    blocked, idx = [], 0
+    blocked, idx, examples = [], 0, []
     for path in sorted(glob.glob(f"{ROOT}/dedup/stack_sql/part-*.jsonl")):
         with open(path, encoding="utf-8") as f:
             for line in f:
-                if doc_hits(json.loads(line)["text"], needles):
+                rec = json.loads(line)
+                if doc_hits(rec["text"], needles):
                     blocked.append(idx)
+                    if len(examples) < 5:
+                        examples.append(f"{rec.get('repo')}:{rec.get('path')}")
                 idx += 1
     report["stack_docs_scanned"] = idx
     report["stack_docs_contaminated"] = len(blocked)
-    report["gretel_train"] = scan_pairs(
+    report["stack_contaminated_examples"] = examples
+    gretel, gretel_bad = scan_pairs(
         f"{ROOT}/verified/gretel_train.jsonl", "sql_prompt", "sql", needles
     )
-    report["synthetic"] = scan_pairs(f"{ROOT}/synth.jsonl", "question", "sql", needles)
+    synth, synth_bad = scan_pairs(f"{ROOT}/synth.jsonl", "question", "sql", needles)
+    report["gretel_train"] = gretel
+    report["synthetic"] = synth
     report["fineweb"] = "not scanned (general web text)"
 
     os.makedirs(f"{ROOT}/blocklist", exist_ok=True)
-    with open(f"{ROOT}/blocklist/stack_sql.json", "w") as f:
-        json.dump(blocked, f)
+    for name, ids in [("stack_sql", blocked), ("gretel_train", gretel_bad), ("synth", synth_bad)]:
+        with open(f"{ROOT}/blocklist/{name}.json", "w") as f:
+            json.dump(ids, f)
     with open(f"{ROOT}/leakage_report.json", "w") as f:
         json.dump(report, f, indent=2)
     print(json.dumps(report, indent=2))

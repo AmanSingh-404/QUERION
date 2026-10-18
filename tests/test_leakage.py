@@ -1,4 +1,6 @@
-from data.leakage import build_needles, doc_hits, norm
+import json
+
+from data.leakage import build_needles, doc_hits, norm, scan_pairs
 
 ROWS = [
     {
@@ -33,3 +35,16 @@ def test_finds_question_line():
 
 def test_clean_document_has_no_hits():
     assert not doc_hits("CREATE TABLE a (x INT);\nSELECT * FROM a;", build_needles(ROWS))
+
+
+def test_scan_pairs_returns_matching_ids(tmp_path):
+    rows = [
+        {"question": "How many singers do we have in total?", "sql": "SELECT 1"},
+        {"question": "Something else entirely, no match here", "sql": "SELECT 2"},
+        {"question": "how  many singers do we have in total?", "sql": "SELECT 3"},
+    ]
+    path = tmp_path / "p.jsonl"
+    path.write_text("\n".join(json.dumps(r) for r in rows) + "\n")
+    out, bad = scan_pairs(str(path), "question", "sql", build_needles(ROWS))
+    assert bad == [0, 2]
+    assert out["question_matches"] == 2

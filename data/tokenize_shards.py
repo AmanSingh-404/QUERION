@@ -129,32 +129,53 @@ def encode_all(
     return state
 
 
+def load_blocklist(name):
+    path = f"{ROOT}/blocklist/{name}.json"
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"{path} is missing: run `python -m data.leakage` first")
+    with open(path) as f:
+        return set(json.load(f))
+
+
 def stack_factory(skip):
+    blocked = load_blocklist("stack_sql")
+
     def gen():
+        i = 0
         for path in sorted(glob.glob(f"{ROOT}/dedup/stack_sql/part-*.jsonl")):
             with open(path, encoding="utf-8") as f:
                 for line in f:
                     text = json.loads(line)["text"]
-                    yield None if has_special(text) else BOS + text + EOS
+                    bad = i in blocked or has_special(text)
+                    yield None if bad else BOS + text + EOS
+                    i += 1
 
     return itertools.islice(gen(), skip, None)
 
 
 def pairs_factory(skip):
+    block_gretel = load_blocklist("gretel_train")
+    block_synth = load_blocklist("synth")
+
     def gen():
         with open(f"{ROOT}/verified/gretel_train.jsonl", encoding="utf-8") as f:
-            for line in f:
+            for i, line in enumerate(f):
                 r = json.loads(line)
                 statements = statements_from_gretel(r["sql_context"])
                 texts = [r["sql_prompt"], r["sql"], *statements]
-                if not statements or any(has_special(t) for t in texts):
+                bad = i in block_gretel or not statements or any(has_special(x) for x in texts)
+                if bad:
                     yield None
                 else:
                     yield format_example(statements, r["sql_prompt"], r["sql"])
         with open(f"{ROOT}/synth.jsonl", encoding="utf-8") as f:
-            for line in f:
+            for i, line in enumerate(f):
                 r = json.loads(line)
-                yield format_example(statements_from_lines(r["schema"]), r["question"], r["sql"])
+                if i in block_synth:
+                    yield None
+                else:
+                    schema = statements_from_lines(r["schema"])
+                    yield format_example(schema, r["question"], r["sql"])
 
     return itertools.islice(gen(), skip, None)
 
