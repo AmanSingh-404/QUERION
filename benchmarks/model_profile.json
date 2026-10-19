@@ -1,0 +1,16 @@
+{
+  "gpu": "NVIDIA GeForce RTX 4050 Laptop GPU",
+  "config": "100m",
+  "results": [
+    {"checkpointing": false, "micro_batch": 1, "seq": 2048, "tokens_per_sec": 13588, "peak_mem_gb": 2.44, "status": "ok"},
+    {"checkpointing": false, "micro_batch": 2, "seq": 2048, "tokens_per_sec": 12868, "peak_mem_gb": 4.25, "status": "ok"},
+    {"checkpointing": false, "micro_batch": 4, "seq": 2048, "tokens_per_sec": 3735, "peak_mem_gb": 7.85, "status": "ok"},
+    {"checkpointing": false, "micro_batch": 8, "seq": 2048, "tokens_per_sec": null, "peak_mem_gb": null, "status": "oom"},
+    {"checkpointing": true, "micro_batch": 1, "seq": 2048, "tokens_per_sec": 11265, "peak_mem_gb": 1.24, "status": "ok"},
+    {"checkpointing": true, "micro_batch": 2, "seq": 2048, "tokens_per_sec": 10593, "peak_mem_gb": 2.02, "status": "ok"},
+    {"checkpointing": true, "micro_batch": 4, "seq": 2048, "tokens_per_sec": 9437, "peak_mem_gb": 3.58, "status": "ok"},
+    {"checkpointing": true, "micro_batch": 8, "seq": 2048, "tokens_per_sec": 7943, "peak_mem_gb": 6.69, "status": "ok"}
+  ],
+  "best": {"checkpointing": false, "micro_batch": 1, "seq": 2048, "tokens_per_sec": 13588, "peak_mem_gb": 2.44, "status": "ok"},
+  "hours_for_2b_tokens": 40.9
+}

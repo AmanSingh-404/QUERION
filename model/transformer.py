@@ -2,6 +2,7 @@ import math
 
 import torch.nn.functional as F
 from torch import nn
+from torch.utils.checkpoint import checkpoint
 
 from model.config import ModelConfig
 from model.layers import Block, RMSNorm, precompute_rope
@@ -11,6 +12,7 @@ class Transformer(nn.Module):
     def __init__(self, cfg: ModelConfig):
         super().__init__()
         self.cfg = cfg
+        self.grad_checkpointing = False
         self.tok_emb = nn.Embedding(cfg.vocab_size, cfg.d_model)
         self.blocks = nn.ModuleList([Block(cfg) for _ in range(cfg.n_layers)])
         self.norm = RMSNorm(cfg.d_model, cfg.norm_eps)
@@ -36,7 +38,10 @@ class Transformer(nn.Module):
     def forward(self, idx, targets=None):
         x = self.tok_emb(idx)
         for block in self.blocks:
-            x = block(x, self.cos, self.sin)
+            if self.grad_checkpointing and self.training:
+                x = checkpoint(block, x, self.cos, self.sin, use_reentrant=False)
+            else:
+                x = block(x, self.cos, self.sin)
         logits = self.lm_head(self.norm(x))
         loss = None
         if targets is not None:

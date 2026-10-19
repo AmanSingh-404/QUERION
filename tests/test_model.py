@@ -122,3 +122,16 @@ def test_overfits_a_tiny_batch():
         loss.backward()
         opt.step()
     assert loss.item() < 0.1
+
+
+def test_grad_checkpointing_gives_identical_gradients():
+    torch.manual_seed(0)
+    model = Transformer(TINY)
+    x, y = torch.randint(0, 100, (2, 16)), torch.randint(0, 100, (2, 16))
+    model(x, y)[1].backward()
+    plain = {n: p.grad.clone() for n, p in model.named_parameters()}
+    model.zero_grad()
+    model.grad_checkpointing = True
+    model(x, y)[1].backward()
+    for n, p in model.named_parameters():
+        assert torch.allclose(p.grad, plain[n], atol=1e-6), n

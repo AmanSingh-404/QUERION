@@ -1,6 +1,12 @@
 # Changelog
 
 
+## v0.3.0 - Phase 3: Model code
+- 101,026,560-parameter decoder-only transformer (12 layers, grouped-query attention with 12 query and 4 KV heads, RoPE, RMSNorm, SwiGLU, tied embeddings) with 14 unit tests
+- Logits match HuggingFace's Llama implementation exactly (max difference 0.0) when weights are copied over
+- Overfits a fixed batch from loss 10.2 to 0.0005 in 200 steps on the RTX 4050 in bf16
+- Profiled on the RTX 4050 (6 GB): 13.6k tokens/s at micro-batch 1 without checkpointing, 2.4 GB, about 41 hours estimated for 2B tokens
+
 ## v0.2.0 - Phase 2: Data pipeline
 - Cleaned (75.7% kept) and deduplicated 1.5 GB of SQL files, verified 67.9% of Gretel pairs by execution, generated 40,000 execution-verified synthetic pairs
 - Frozen prompt format and a resumable tokenize-to-shards pipeline: 1.51B unique train tokens in uint16 shards
