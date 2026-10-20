@@ -1,6 +1,12 @@
 # Changelog
 
 
+## v0.4.0 - Phase 4: Training loop
+- Resumable trainer: stateless mixed data loader (59% FineWeb-Edu, 40% SQL files, 1% pairs), bf16 autocast, AdamW with warmup and cosine decay, gradient accumulation, atomic checkpoints with automatic fallback, W&B plus local JSONL logging
+- A run that is stopped and resumed ends with the same weights as an uninterrupted run (tested)
+- Dry run on the real data on the RTX 4050 (500 steps, 8M tokens): validation loss 7.06 to 5.66, about 12.2k tokens/s, 3.6 GB GPU memory. Resuming after Ctrl+C continued with no jump
+- Estimated full run: about 46 hours for 2.0B tokens
+
 ## v0.3.0 - Phase 3: Model code
 - 101,026,560-parameter decoder-only transformer (12 layers, grouped-query attention with 12 query and 4 KV heads, RoPE, RMSNorm, SwiGLU, tied embeddings) with 14 unit tests
 - Logits match HuggingFace's Llama implementation exactly (max difference 0.0) when weights are copied over

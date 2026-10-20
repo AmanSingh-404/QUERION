@@ -1,6 +1,7 @@
 import argparse
 import json
 import time
+import uuid
 from dataclasses import asdict, fields
 from pathlib import Path
 
@@ -90,12 +91,20 @@ def run(cfg: TrainConfig):
 
     wb = None
     if cfg.wandb:
-        import wandb
+        try:
+            import wandb
 
-        wandb_id = wandb_id or wandb.util.generate_id()
-        wb = wandb.init(
-            project="querion", name=cfg.run_name, id=wandb_id, resume="allow", config=asdict(cfg)
-        )
+            wandb_id = wandb_id or uuid.uuid4().hex[:8]
+            wb = wandb.init(
+                project="querion",
+                name=cfg.run_name,
+                id=wandb_id,
+                resume="allow",
+                config=asdict(cfg),
+            )
+        except Exception as e:
+            print(f"W&B disabled: {type(e).__name__}: {e}", flush=True)
+            wb = None
 
     def snapshot(step):
         return {
@@ -150,7 +159,11 @@ def run(cfg: TrainConfig):
             log_file.write(json.dumps(row) + "\n")
             log_file.flush()
             if wb is not None:
-                wb.log(row, step=done)
+                try:
+                    wb.log(row, step=done)
+                except Exception as e:
+                    print(f"W&B logging stopped: {type(e).__name__}: {e}", flush=True)
+                    wb = None
             eta_h = (cfg.total_steps - done) * (time.time() - started) / (done - start_step) / 3600
             print(
                 f"step {done}/{cfg.total_steps}  loss {row['loss']:.4f}  lr {lr:.2e}  "
@@ -170,7 +183,10 @@ def run(cfg: TrainConfig):
     finally:
         log_file.close()
         if wb is not None:
-            wb.finish()
+            try:
+                wb.finish()
+            except Exception as e:
+                print(f"W&B finish failed: {type(e).__name__}", flush=True)
     return model
 
 

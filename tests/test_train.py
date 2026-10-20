@@ -1,5 +1,6 @@
 import json
 import math
+import sys
 
 import numpy as np
 import pytest
@@ -147,3 +148,10 @@ def test_training_reduces_loss_and_logs(tmp_path):
     assert len(rows) == 40
     assert math.isfinite(rows[-1]["val_loss"])
     assert rows[-1]["loss"] < 0.5 * rows[0]["loss"]
+
+
+def test_logging_failure_does_not_stop_training(tmp_path, monkeypatch):
+    monkeypatch.setitem(sys.modules, "wandb", None)
+    make_shards(tmp_path / "shards")
+    run(tiny_cfg(tmp_path, wandb=True, total_steps=2))
+    assert load_latest(tmp_path / "run")["step"] == 2
