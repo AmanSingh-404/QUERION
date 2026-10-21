@@ -2,14 +2,14 @@ import argparse
 import json
 import time
 import uuid
-from dataclasses import asdict, fields
+from dataclasses import asdict, fields, replace
 from pathlib import Path
 
 import torch
 from tokenizers import Tokenizer
 
 from data.prompt import format_prompt
-from model.config import QUERION_100M, TINY
+from model.config import PROXY_20M, QUERION_100M, TINY
 from model.transformer import Transformer
 from tokenizer.special_tokens import EOS_ID
 from train.checkpoint import load_latest, save_checkpoint
@@ -66,7 +66,14 @@ def make_samples(model, tok, device):
 
 def run(cfg: TrainConfig):
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    mcfg = QUERION_100M if cfg.model == "100m" else TINY
+    mcfg = {"100m": QUERION_100M, "tiny": TINY, "proxy": PROXY_20M}[cfg.model]
+    overrides = {}
+    if cfg.n_kv_heads:
+        overrides["n_kv_heads"] = cfg.n_kv_heads
+    if cfg.pos_emb:
+        overrides["pos_emb"] = cfg.pos_emb
+    if overrides:
+        mcfg = replace(mcfg, **overrides)
     torch.manual_seed(cfg.seed)
     model = Transformer(mcfg).to(device)
     optimizer = make_optimizer(model, cfg, device)

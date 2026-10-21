@@ -49,8 +49,9 @@ class Attention(nn.Module):
         q = self.wq(x).view(b, t, self.n_heads, self.hd).transpose(1, 2)
         k = self.wk(x).view(b, t, self.n_kv, self.hd).transpose(1, 2)
         v = self.wv(x).view(b, t, self.n_kv, self.hd).transpose(1, 2)
-        q = apply_rope(q, cos[:t], sin[:t])
-        k = apply_rope(k, cos[:t], sin[:t])
+        if cos is not None:
+            q = apply_rope(q, cos[:t], sin[:t])
+            k = apply_rope(k, cos[:t], sin[:t])
         if self.rep > 1:
             k = k.repeat_interleave(self.rep, dim=1)
             v = v.repeat_interleave(self.rep, dim=1)

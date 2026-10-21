@@ -155,3 +155,10 @@ def test_logging_failure_does_not_stop_training(tmp_path, monkeypatch):
     make_shards(tmp_path / "shards")
     run(tiny_cfg(tmp_path, wandb=True, total_steps=2))
     assert load_latest(tmp_path / "run")["step"] == 2
+
+
+def test_model_overrides_are_applied(tmp_path):
+    make_shards(tmp_path / "shards")
+    model = run(tiny_cfg(tmp_path, total_steps=2, n_kv_heads=4, pos_emb="learned"))
+    assert model.cfg.n_kv_heads == 4 and model.cfg.pos_emb == "learned"
+    assert model.pos_emb is not None

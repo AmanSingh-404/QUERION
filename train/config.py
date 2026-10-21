@@ -27,6 +27,8 @@ class TrainConfig:
     wandb: bool = False
     samples: bool = True
     stop_at_step: int = 0
+    n_kv_heads: int = 0
+    pos_emb: str = "rope"
 
 
 def parse_mix(text):

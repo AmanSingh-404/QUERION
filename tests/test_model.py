@@ -1,10 +1,11 @@
 import math
+from dataclasses import replace
 
 import pytest
 import torch
 import torch.nn.functional as F
 
-from model.config import QUERION_100M, TINY, ModelConfig
+from model.config import PROXY_20M, QUERION_100M, TINY, ModelConfig
 from model.layers import Attention, RMSNorm, apply_rope, precompute_rope
 from model.transformer import Transformer
 
@@ -135,3 +136,29 @@ def test_grad_checkpointing_gives_identical_gradients():
     model(x, y)[1].backward()
     for n, p in model.named_parameters():
         assert torch.allclose(p.grad, plain[n], atol=1e-6), n
+
+
+def test_proxy_parameter_counts():
+    assert Transformer(PROXY_20M).num_params() == 19_542_912
+    assert Transformer(replace(PROXY_20M, n_kv_heads=6)).num_params() == 20_722_560
+    assert Transformer(replace(PROXY_20M, pos_emb="learned")).num_params() == 20_329_344
+
+
+def test_learned_positions_are_causal_and_order_sensitive():
+    model = Transformer(replace(TINY, pos_emb="learned")).eval()
+    assert model.cos is None and model.pos_emb is not None
+    a = torch.randint(0, 100, (1, 16))
+    b = a.clone()
+    b[0, 10] = (b[0, 10] + 1) % 100
+    la, _ = model(a)
+    lb, _ = model(b)
+    assert torch.allclose(la[:, :10], lb[:, :10], atol=1e-5)
+    assert not torch.allclose(la[:, 10:], lb[:, 10:], atol=1e-5)
+    swapped = a.clone()
+    swapped[0, [2, 3]] = a[0, [3, 2]]
+    assert not torch.allclose(model(swapped)[0][:, -1], la[:, -1], atol=1e-5)
+
+
+def test_invalid_position_embedding_is_rejected():
+    with pytest.raises(ValueError):
+        ModelConfig(pos_emb="alibi")

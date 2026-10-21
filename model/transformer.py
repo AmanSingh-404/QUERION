@@ -1,5 +1,6 @@
 import math
 
+import torch
 import torch.nn.functional as F
 from torch import nn
 from torch.utils.checkpoint import checkpoint
@@ -18,7 +19,12 @@ class Transformer(nn.Module):
         self.norm = RMSNorm(cfg.d_model, cfg.norm_eps)
         self.lm_head = nn.Linear(cfg.d_model, cfg.vocab_size, bias=False)
         self.lm_head.weight = self.tok_emb.weight
-        cos, sin = precompute_rope(cfg.head_dim, cfg.max_seq_len, cfg.rope_theta)
+        self.pos_emb = None
+        if cfg.pos_emb == "learned":
+            self.pos_emb = nn.Embedding(cfg.max_seq_len, cfg.d_model)
+            cos = sin = None
+        else:
+            cos, sin = precompute_rope(cfg.head_dim, cfg.max_seq_len, cfg.rope_theta)
         self.register_buffer("cos", cos, persistent=False)
         self.register_buffer("sin", sin, persistent=False)
         self.apply(self._init_weights)
@@ -37,6 +43,8 @@ class Transformer(nn.Module):
 
     def forward(self, idx, targets=None):
         x = self.tok_emb(idx)
+        if self.pos_emb is not None:
+            x = x + self.pos_emb(torch.arange(idx.size(1), device=idx.device))
         for block in self.blocks:
             if self.grad_checkpointing and self.training:
                 x = checkpoint(block, x, self.cos, self.sin, use_reentrant=False)
