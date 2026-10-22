@@ -6,8 +6,8 @@ BASE_WEIGHTS = {"fineweb": 0.59, "stack": 0.40, "pairs": 0.01}
 GROUPS = {
     "Attention (GQA vs MHA)": ["base", "mha"],
     "Positions (RoPE vs learned)": ["base", "learned-pos"],
-    "Data mix": ["base", "mix-sql-heavy"],
-    "Learning rate": ["lr-3e-4", "base", "lr-3e-3"],
+    "Data mix": ["base", "mix-sql-heavy", "mix-sql-heavy-p1"],
+    "Learning rate": ["lr-3e-4", "base", "lr-3e-3", "lr-6e-3"],
 }
 DOCS = Path(__file__).resolve().parents[1] / "docs" / "experiments"
 

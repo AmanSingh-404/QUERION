@@ -9,10 +9,10 @@ class TrainConfig:
     model: str = "100m"
     seq_len: int = 2048
     micro_batch: int = 1
-    accum: int = 256
-    total_steps: int = 3815
-    warmup_steps: int = 200
-    lr: float = 6e-4
+    accum: int = 128
+    total_steps: int = 7630
+    warmup_steps: int = 300
+    lr: float = 1.5e-3
     min_lr_ratio: float = 0.1
     weight_decay: float = 0.1
     beta1: float = 0.9
@@ -20,15 +20,16 @@ class TrainConfig:
     grad_clip: float = 1.0
     mix: str = "fineweb:0.59,stack:0.40,pairs:0.01"
     seed: int = 1337
-    ckpt_every: int = 20
-    milestone_every: int = 1000
-    eval_every: int = 100
+    ckpt_every: int = 40
+    milestone_every: int = 2500
+    eval_every: int = 250
     eval_windows: int = 16
     wandb: bool = False
     samples: bool = True
     stop_at_step: int = 0
     n_kv_heads: int = 0
     pos_emb: str = "rope"
+    allow_cpu: bool = False
 
 
 def parse_mix(text):

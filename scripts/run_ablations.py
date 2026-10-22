@@ -26,6 +26,8 @@ RUNS = {
     "mix-sql-heavy": {"mix": "fineweb:0.40,stack:0.58,pairs:0.02"},
     "lr-3e-4": {"lr": 3e-4},
     "lr-3e-3": {"lr": 3e-3},
+    "lr-6e-3": {"lr": 6e-3},
+    "mix-sql-heavy-p1": {"mix": "fineweb:0.41,stack:0.58,pairs:0.01"},
 }
 
 

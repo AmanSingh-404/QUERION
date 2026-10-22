@@ -11,6 +11,7 @@ from train.config import TrainConfig, parse_mix
 from train.data import MixedLoader, ShardedTokens, val_windows
 from train.schedule import lr_at
 from train.train import run
+from train.watchdog import SlowdownWatch
 
 SOURCES = ("fineweb", "stack", "pairs")
 
@@ -162,3 +163,30 @@ def test_model_overrides_are_applied(tmp_path):
     model = run(tiny_cfg(tmp_path, total_steps=2, n_kv_heads=4, pos_emb="learned"))
     assert model.cfg.n_kv_heads == 4 and model.cfg.pos_emb == "learned"
     assert model.pos_emb is not None
+
+
+def test_refuses_to_train_a_real_model_on_the_cpu(tmp_path, monkeypatch):
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
+    with pytest.raises(SystemExit):
+        run(tiny_cfg(tmp_path, model="proxy"))
+
+
+def test_main_config_defaults_are_frozen():
+    cfg = TrainConfig()
+    assert (cfg.model, cfg.seq_len, cfg.micro_batch, cfg.accum) == ("100m", 2048, 1, 128)
+    assert cfg.lr == 1.5e-3 and cfg.warmup_steps == 300 and cfg.min_lr_ratio == 0.1
+    assert cfg.total_steps == 7630 and cfg.weight_decay == 0.1 and cfg.grad_clip == 1.0
+    assert parse_mix(cfg.mix) == [("fineweb", 0.59), ("stack", 0.40), ("pairs", 0.01)]
+    assert cfg.micro_batch * cfg.accum * cfg.seq_len * cfg.total_steps == pytest.approx(
+        2.0e9, rel=0.01
+    )
+
+
+def test_slowdown_watch_warns_after_sustained_drop_only():
+    watch = SlowdownWatch()
+    assert [watch.update(12000.0) for _ in range(12)] == [None] * 12
+    assert watch.update(3000.0) is None  # a single slow step is ignored
+    assert watch.update(12000.0) is None
+    msgs = [watch.update(2600.0) for _ in range(5)]
+    assert msgs[:4] == [None] * 4 and "unplugged" in msgs[4]
+    assert watch.update(12000.0) is None  # recovery resets the counter

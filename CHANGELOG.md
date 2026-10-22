@@ -1,6 +1,11 @@
 # Changelog
 
 
+## v0.5.0 - Phase 5: Ablations
+- Nine runs of a 19.5M-parameter proxy model on 100M tokens each: GQA vs MHA (tie within noise 0.007), RoPE vs learned positions (RoPE by 0.80), data mix (kept 59/40/1), learning rate sweep (best 3e-3, unstable at 6e-3)
+- Final main-run configuration frozen in docs/final_config.md: peak LR 1.5e-3, 262,144 tokens per step, 7,630 steps
+- Throughput watchdog that warns when training slows down, for example on battery power
+
 ## v0.4.0 - Phase 4: Training loop
 - Resumable trainer: stateless mixed data loader (59% FineWeb-Edu, 40% SQL files, 1% pairs), bf16 autocast, AdamW with warmup and cosine decay, gradient accumulation, atomic checkpoints with automatic fallback, W&B plus local JSONL logging
 - A run that is stopped and resumed ends with the same weights as an uninterrupted run (tested)

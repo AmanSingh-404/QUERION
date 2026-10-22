@@ -17,6 +17,7 @@ from train.config import TrainConfig, parse_mix
 from train.data import MixedLoader, load_val_sets, val_windows
 from train.sample import generate
 from train.schedule import lr_at
+from train.watchdog import SlowdownWatch
 
 TOK_PATH = Path(__file__).resolve().parents[1] / "tokenizer" / "tokenizer.json"
 SQL_PROMPT = format_prompt(
@@ -66,6 +67,11 @@ def make_samples(model, tok, device):
 
 def run(cfg: TrainConfig):
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    if device == "cpu" and cfg.model != "tiny" and not cfg.allow_cpu:
+        raise SystemExit(
+            "CUDA is not available: refusing to train on the CPU (--allow-cpu to override)"
+        )
+    print(f"device: {torch.cuda.get_device_name(0) if device == 'cuda' else 'cpu'}", flush=True)
     mcfg = {"100m": QUERION_100M, "tiny": TINY, "proxy": PROXY_20M}[cfg.model]
     overrides = {}
     if cfg.n_kv_heads:
@@ -125,6 +131,7 @@ def run(cfg: TrainConfig):
     tokens_per_step = cfg.micro_batch * cfg.accum * cfg.seq_len
     log_file = open(out_dir / "log.jsonl", "a", encoding="utf-8")
     done, started = start_step, time.time()
+    watch = SlowdownWatch()
     model.train()
     try:
         for step in range(start_step, cfg.total_steps):
@@ -164,6 +171,9 @@ def run(cfg: TrainConfig):
                     for label, text in make_samples(model, tok, device).items():
                         print(f"--- sample ({label}) ---\n{text}\n", flush=True)
             log_file.write(json.dumps(row) + "\n")
+            warning = watch.update(row["tokens_per_sec"])
+            if warning:
+                print(warning, flush=True)
             log_file.flush()
             if wb is not None:
                 try:
