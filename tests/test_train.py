@@ -190,3 +190,32 @@ def test_slowdown_watch_warns_after_sustained_drop_only():
     msgs = [watch.update(2600.0) for _ in range(5)]
     assert msgs[:4] == [None] * 4 and "unplugged" in msgs[4]
     assert watch.update(12000.0) is None  # recovery resets the counter
+
+
+def patch_clip(monkeypatch, bad_calls):
+    real = torch.nn.utils.clip_grad_norm_
+    calls = {"n": 0}
+
+    def fake(params, max_norm):
+        calls["n"] += 1
+        norm = real(params, max_norm)
+        return torch.tensor(float("nan")) if calls["n"] in bad_calls else norm
+
+    monkeypatch.setattr(torch.nn.utils, "clip_grad_norm_", fake)
+
+
+def test_a_non_finite_gradient_skips_the_update(tmp_path, monkeypatch):
+    make_shards(tmp_path / "shards")
+    patch_clip(monkeypatch, bad_calls={2})
+    model = run(tiny_cfg(tmp_path, total_steps=4, accum=1))
+    assert all(torch.isfinite(p).all() for p in model.parameters())
+    with open(tmp_path / "run" / "log.jsonl") as f:
+        assert len(f.readlines()) == 3
+
+
+def test_repeated_non_finite_gradients_stop_training(tmp_path, monkeypatch):
+    make_shards(tmp_path / "shards")
+    patch_clip(monkeypatch, bad_calls=set(range(1, 100)))
+    with pytest.raises(SystemExit):
+        run(tiny_cfg(tmp_path, total_steps=10, accum=1))
+    assert load_latest(tmp_path / "run") is None

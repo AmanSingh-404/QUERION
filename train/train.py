@@ -1,5 +1,6 @@
 import argparse
 import json
+import math
 import time
 import uuid
 from dataclasses import asdict, fields, replace
@@ -132,6 +133,7 @@ def run(cfg: TrainConfig):
     log_file = open(out_dir / "log.jsonl", "a", encoding="utf-8")
     done, started = start_step, time.time()
     watch = SlowdownWatch()
+    bad_steps = 0
     model.train()
     try:
         for step in range(start_step, cfg.total_steps):
@@ -147,6 +149,18 @@ def run(cfg: TrainConfig):
                 (loss / cfg.accum).backward()
                 loss_sum += loss.detach()
             grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.grad_clip).item()
+            if not math.isfinite(grad_norm):
+                optimizer.zero_grad(set_to_none=True)
+                bad_steps += 1
+                print(
+                    f"WARNING: non-finite gradient at step {step + 1}, update skipped", flush=True
+                )
+                if bad_steps >= 5:
+                    raise SystemExit(
+                        "too many non-finite gradients: stopping, checkpoints are intact"
+                    )
+                continue
+            bad_steps = 0
             optimizer.step()
             optimizer.zero_grad(set_to_none=True)
             done = step + 1
