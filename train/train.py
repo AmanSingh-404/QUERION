@@ -204,8 +204,9 @@ def run(cfg: TrainConfig):
                 flush=True,
             )
             stop = bool(cfg.stop_at_step) and done >= cfg.stop_at_step
-            if done % cfg.ckpt_every == 0 or done == cfg.total_steps or stop:
-                save_checkpoint(out_dir, snapshot(done), milestone=done % cfg.milestone_every == 0)
+            milestone = done % cfg.milestone_every == 0
+            if done % cfg.ckpt_every == 0 or done == cfg.total_steps or stop or milestone:
+                save_checkpoint(out_dir, snapshot(done), milestone=milestone)
             if stop:
                 break
     except KeyboardInterrupt:

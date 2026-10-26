@@ -219,3 +219,10 @@ def test_repeated_non_finite_gradients_stop_training(tmp_path, monkeypatch):
     with pytest.raises(SystemExit):
         run(tiny_cfg(tmp_path, total_steps=10, accum=1))
     assert load_latest(tmp_path / "run") is None
+
+
+def test_milestones_are_saved_even_between_regular_checkpoints(tmp_path):
+    make_shards(tmp_path / "shards")
+    run(tiny_cfg(tmp_path, ckpt_every=100, milestone_every=3, total_steps=6))
+    assert (tmp_path / "run" / "step-000003.pt").exists()
+    assert (tmp_path / "run" / "step-000006.pt").exists()
