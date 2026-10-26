@@ -40,4 +40,9 @@ def exec_match(db_path, pred_sql, gold_sql, timeout=5.0):
     if pred_err:
         return {"status": "pred_error", "match": False, "error": pred_err}
     ok = same_result(pred_rows, gold_rows, ordered=has_order_by(gold_sql))
-    return {"status": "match" if ok else "mismatch", "match": ok, "error": None}
+    return {
+        "status": "match" if ok else "mismatch",
+        "match": ok,
+        "error": None,
+        "gold_empty": not gold_rows,
+    }
