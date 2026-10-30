@@ -5,10 +5,12 @@ from dataclasses import dataclass
 class SFTConfig:
     sft_dir: str = "C:/querion-data/sft"
     init_ckpt: str = "C:/querion-runs/main/latest.pt"
-    out_dir: str = "C:/querion-runs/sft"
+    out_dir: str = "C:/querion-runs/sft-aug"
     model: str = "100m"
     epochs: int = 2
-    spider_repeat: int = 2
+    spider_repeat: int = 1
+    aug_copies: int = 3
+    aug_other: float = 0.3
     micro_tokens: int = 2048
     accum: int = 16
     total_steps: int = 0

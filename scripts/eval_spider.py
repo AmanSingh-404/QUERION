@@ -1,5 +1,6 @@
 import json
 import sys
+import time
 from pathlib import Path
 
 import torch
@@ -23,6 +24,7 @@ def main():
     root = sys.argv[2] if len(sys.argv) > 2 else "C:/querion-data/spider_data"
     out_name = sys.argv[3] if len(sys.argv) > 3 else "pretrained"
     limit = int(sys.argv[4]) if len(sys.argv) > 4 else 0
+    unquote = len(sys.argv) > 5 and sys.argv[5] == "unquote"
     device = "cuda" if torch.cuda.is_available() else "cpu"
     state = torch.load(ckpt, map_location="cpu", weights_only=True)
     model = Transformer(QUERION_100M)
@@ -31,6 +33,8 @@ def main():
     tok = Tokenizer.from_file(str(TOK_PATH))
 
     def predict(statements, question):
+        if unquote:
+            statements = [s.replace('"', "").replace("`", "") for s in statements]
         ids = tok.encode(format_prompt(statements, question)).ids
         if len(ids) > MAX_PROMPT:
             return None
@@ -39,11 +43,13 @@ def main():
             out = out[:-1]
         return tok.decode(out, skip_special_tokens=False).strip().rstrip(";")
 
-    with open(DEV, encoding="utf-8") as f:
+    with open(sys.argv[6] if len(sys.argv) > 6 else DEV, encoding="utf-8") as f:
         items = [json.loads(line) for line in f]
     if limit:
-        items = items[:limit]
+        items = items[:: max(1, len(items) // limit)][:limit]
+    start = time.time()
     summary, records = evaluate(items, root, predict)
+    summary["seconds"] = round(time.time() - start)
     summary["checkpoint_step"] = state["step"]
     out_dir = Path("C:/querion-runs/eval")
     out_dir.mkdir(parents=True, exist_ok=True)

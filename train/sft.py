@@ -12,6 +12,7 @@ from tokenizers import Tokenizer
 from model.config import PROXY_20M, QUERION_100M, TINY
 from model.transformer import Transformer
 from tokenizer.special_tokens import EOS_ID
+from train.augment import augment_rows
 from train.checkpoint import load_latest, save_checkpoint
 from train.sample import generate
 from train.schedule import lr_at
@@ -92,7 +93,10 @@ def run(cfg):
         raise SystemExit("CUDA is not available: refusing to fine-tune on the CPU")
     device = "cuda"
     tok = Tokenizer.from_file(str(TOK_PATH))
-    pairs, sources = encode_all(tok, read_jsonl(Path(cfg.sft_dir) / "train.jsonl"))
+    rows = read_jsonl(Path(cfg.sft_dir) / "train.jsonl")
+    if cfg.aug_copies or cfg.aug_other:
+        rows = augment_rows(rows, cfg)
+    pairs, sources = encode_all(tok, rows)
     val_pairs, val_sources = encode_all(tok, read_jsonl(Path(cfg.sft_dir) / "val.jsonl"))
     val = {
         s: [p for p, src in zip(val_pairs, val_sources, strict=True) if src == s]
