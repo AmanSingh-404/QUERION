@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.6.0 - Phases 6-8: Pretraining, fine-tuning, evaluation
+- Main pretraining run: 2B tokens in 43.3 compute hours on the RTX 4050, final validation loss 2.2786 on the planned mix
+- Evaluation harness: read-only SQLite executor with timeout and row cap, order-aware result comparator, Spider dev pipeline. The pretrained model scores 4.84% execution accuracy zero-shot
+- Supervised fine-tuning with loss on SQL tokens only: 1,597 steps over 130,748 examples from Spider, Gretel and synthetic pairs
+- Identifier augmentation for Spider schemas (case styles, plural flips, quote stripping, table shuffle): Spider dev execution accuracy 17.7% to 21.5% (1,034 questions, original dev databases)
+- Error analysis: 91% on Spider training databases vs 18% on dev (a generalization gap), 533 of 674 failures are unknown-column errors, glued-keyword bug traced to quoted schemas. Name repair adds 2 to 3 points and is not in the headline numbers
+- Weights exported as fp32 safetensors (404 MB), every tensor verified identical after reload. Full write-up in docs/results.md
 
 ## v0.5.0 - Phase 5: Ablations
 - Nine runs of a 19.5M-parameter proxy model on 100M tokens each: GQA vs MHA (tie within noise 0.007), RoPE vs learned positions (RoPE by 0.80), data mix (kept 59/40/1), learning rate sweep (best 3e-3, unstable at 6e-3)
