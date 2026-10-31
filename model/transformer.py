@@ -41,15 +41,17 @@ class Transformer(nn.Module):
     def num_params(self):
         return sum(p.numel() for p in self.parameters())
 
-    def forward(self, idx, targets=None):
+    def forward(self, idx, targets=None, cache=None, pos=0):
         x = self.tok_emb(idx)
         if self.pos_emb is not None:
-            x = x + self.pos_emb(torch.arange(idx.size(1), device=idx.device))
-        for block in self.blocks:
+            x = x + self.pos_emb(torch.arange(pos, pos + idx.size(1), device=idx.device))
+        for i, block in enumerate(self.blocks):
             if self.grad_checkpointing and self.training:
                 x = checkpoint(block, x, self.cos, self.sin, use_reentrant=False)
             else:
-                x = block(x, self.cos, self.sin)
+                x = block(x, self.cos, self.sin, cache[i] if cache is not None else None, pos)
+        if cache is not None and targets is None:
+            x = x[:, -1:]
         logits = self.lm_head(self.norm(x))
         loss = None
         if targets is not None:
