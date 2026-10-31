@@ -8,10 +8,10 @@ from tokenizers import Tokenizer
 
 from data.prompt import format_prompt
 from eval.spider import evaluate
+from infer.engine import generate_cached
 from model.config import QUERION_100M
 from model.transformer import Transformer
 from tokenizer.special_tokens import EOS_ID
-from train.sample import generate
 from train.train import TOK_PATH
 
 DEV = Path(__file__).resolve().parents[1] / "eval" / "spider_dev.jsonl"
@@ -25,6 +25,7 @@ def main():
     out_name = sys.argv[3] if len(sys.argv) > 3 else "pretrained"
     limit = int(sys.argv[4]) if len(sys.argv) > 4 else 0
     unquote = len(sys.argv) > 5 and sys.argv[5] == "unquote"
+    dev_path = sys.argv[6] if len(sys.argv) > 6 else DEV
     device = "cuda" if torch.cuda.is_available() else "cpu"
     state = torch.load(ckpt, map_location="cpu", weights_only=True)
     model = Transformer(QUERION_100M)
@@ -38,12 +39,12 @@ def main():
         ids = tok.encode(format_prompt(statements, question)).ids
         if len(ids) > MAX_PROMPT:
             return None
-        out = generate(model, ids, MAX_NEW, EOS_ID, device)[len(ids) :]
+        out = generate_cached(model, ids, MAX_NEW, EOS_ID, device)[len(ids) :]
         if out and out[-1] == EOS_ID:
             out = out[:-1]
         return tok.decode(out, skip_special_tokens=False).strip().rstrip(";")
 
-    with open(sys.argv[6] if len(sys.argv) > 6 else DEV, encoding="utf-8") as f:
+    with open(dev_path, encoding="utf-8") as f:
         items = [json.loads(line) for line in f]
     if limit:
         items = items[:: max(1, len(items) // limit)][:limit]
