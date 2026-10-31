@@ -8,6 +8,7 @@ from tokenizers import Tokenizer
 
 from data.prompt import format_prompt
 from eval.spider import evaluate
+from infer.constrain import SqlConstraint, token_texts
 from infer.engine import generate_cached
 from model.config import QUERION_100M
 from model.transformer import Transformer
@@ -24,14 +25,17 @@ def main():
     root = sys.argv[2] if len(sys.argv) > 2 else "C:/querion-data/spider_data"
     out_name = sys.argv[3] if len(sys.argv) > 3 else "pretrained"
     limit = int(sys.argv[4]) if len(sys.argv) > 4 else 0
-    unquote = len(sys.argv) > 5 and sys.argv[5] == "unquote"
-    dev_path = sys.argv[6] if len(sys.argv) > 6 else DEV
+    extra = sys.argv[5:]
+    unquote = "unquote" in extra
+    constrain = "constrain" in extra
+    dev_path = next((a for a in extra if a.endswith(".jsonl")), DEV)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     state = torch.load(ckpt, map_location="cpu", weights_only=True)
     model = Transformer(QUERION_100M)
     model.load_state_dict(state["model"])
     model.to(device).eval()
     tok = Tokenizer.from_file(str(TOK_PATH))
+    texts = token_texts(tok)
 
     def predict(statements, question):
         if unquote:
@@ -39,7 +43,9 @@ def main():
         ids = tok.encode(format_prompt(statements, question)).ids
         if len(ids) > MAX_PROMPT:
             return None
-        out = generate_cached(model, ids, MAX_NEW, EOS_ID, device)[len(ids) :]
+        constraint = SqlConstraint("\n".join(statements), texts, EOS_ID) if constrain else None
+        generated = generate_cached(model, ids, MAX_NEW, EOS_ID, device, constraint=constraint)
+        out = generated[len(ids) :]
         if out and out[-1] == EOS_ID:
             out = out[:-1]
         return tok.decode(out, skip_special_tokens=False).strip().rstrip(";")
