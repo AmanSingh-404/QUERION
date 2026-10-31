@@ -9,7 +9,8 @@ from tokenizers import Tokenizer
 from data.prompt import format_prompt
 from eval.spider import evaluate
 from infer.constrain import SqlConstraint, token_texts
-from infer.engine import generate_cached
+from infer.engine import generate_batch, generate_cached
+from infer.select import choose
 from model.config import QUERION_100M
 from model.transformer import Transformer
 from tokenizer.special_tokens import EOS_ID
@@ -20,6 +21,14 @@ MAX_PROMPT = 1800
 MAX_NEW = 200
 
 
+def clean(text):
+    return text.strip().rstrip(";")
+
+
+def flag(extra, name, cast, default):
+    return next((cast(a.split("=")[1]) for a in extra if a.startswith(name + "=")), default)
+
+
 def main():
     ckpt = sys.argv[1] if len(sys.argv) > 1 else "C:/querion-runs/main/latest.pt"
     root = sys.argv[2] if len(sys.argv) > 2 else "C:/querion-data/spider_data"
@@ -28,6 +37,8 @@ def main():
     extra = sys.argv[5:]
     unquote = "unquote" in extra
     constrain = "constrain" in extra
+    samples = flag(extra, "samples", int, 1)
+    temp = flag(extra, "temp", float, 0.7)
     dev_path = next((a for a in extra if a.endswith(".jsonl")), DEV)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     state = torch.load(ckpt, map_location="cpu", weights_only=True)
@@ -37,25 +48,34 @@ def main():
     tok = Tokenizer.from_file(str(TOK_PATH))
     texts = token_texts(tok)
 
-    def predict(statements, question):
+    def predict(statements, question, db):
         if unquote:
             statements = [s.replace('"', "").replace("`", "") for s in statements]
         ids = tok.encode(format_prompt(statements, question)).ids
         if len(ids) > MAX_PROMPT:
             return None
-        constraint = SqlConstraint("\n".join(statements), texts, EOS_ID) if constrain else None
+        schema_text = "\n".join(statements)
+        if samples > 1:
+            cons = None
+            if constrain:
+                cons = [SqlConstraint(schema_text, texts, EOS_ID) for _ in range(samples)]
+            outs = generate_batch(
+                model, ids, samples, MAX_NEW, EOS_ID, device, constraints=cons, temperature=temp
+            )
+            return choose(db, [clean(tok.decode(o, skip_special_tokens=False)) for o in outs])
+        constraint = SqlConstraint(schema_text, texts, EOS_ID) if constrain else None
         generated = generate_cached(model, ids, MAX_NEW, EOS_ID, device, constraint=constraint)
         out = generated[len(ids) :]
         if out and out[-1] == EOS_ID:
             out = out[:-1]
-        return tok.decode(out, skip_special_tokens=False).strip().rstrip(";")
+        return clean(tok.decode(out, skip_special_tokens=False))
 
     with open(dev_path, encoding="utf-8") as f:
         items = [json.loads(line) for line in f]
     if limit:
         items = items[:: max(1, len(items) // limit)][:limit]
     start = time.time()
-    summary, records = evaluate(items, root, predict)
+    summary, records = evaluate(items, root, predict, with_db=True)
     summary["seconds"] = round(time.time() - start)
     summary["checkpoint_step"] = state["step"]
     out_dir = Path("C:/querion-runs/eval")

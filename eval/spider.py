@@ -38,13 +38,14 @@ def classify_error(message):
     return "other error"
 
 
-def evaluate(items, root, predict, timeout=5.0):
+def evaluate(items, root, predict, timeout=5.0, with_db=False):
     """predict(statements, question) -> SQL string, or None if the prompt was too long."""
     records, status, errors = [], Counter(), Counter()
     for item in items:
         db = db_file(root, item["db_id"])
         statements = schema_statements(db)
-        pred = predict(statements, item["question"])
+        args = (statements, item["question"]) + ((db,) if with_db else ())
+        pred = predict(*args)
         if pred is None:
             result = {"status": "prompt_too_long", "match": False, "error": None}
         else:
