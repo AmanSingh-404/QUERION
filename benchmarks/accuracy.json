@@ -1,0 +1,117 @@
+{
+  "benchmark": "Spider dev, plain execution accuracy on the original dev databases",
+  "collected_at_commit": "a274235",
+  "runs": [
+    {
+      "run": "pretrained",
+      "label": "Pretrained, zero-shot, greedy",
+      "model": "pretrained",
+      "items": 1034,
+      "matches": 50,
+      "exec_accuracy": 0.0484,
+      "std_error": 0.0067,
+      "exec_accuracy_nonempty_gold": 0.0432,
+      "status": {
+        "mismatch": 278,
+        "pred_error": 704,
+        "match": 50,
+        "gold_error": 2
+      },
+      "error_types": {
+        "unknown column": 427,
+        "unknown table": 135,
+        "syntax error": 80,
+        "ambiguous column": 40,
+        "other error": 22
+      }
+    },
+    {
+      "run": "sftfull",
+      "label": "+ SFT",
+      "model": "sft",
+      "items": 1034,
+      "matches": 183,
+      "exec_accuracy": 0.177,
+      "std_error": 0.0119,
+      "exec_accuracy_nonempty_gold": 0.174,
+      "status": {
+        "pred_error": 729,
+        "match": 183,
+        "mismatch": 120,
+        "gold_error": 2
+      },
+      "error_types": {
+        "unknown table": 112,
+        "syntax error": 73,
+        "unknown column": 537,
+        "other error": 5,
+        "ambiguous column": 2
+      }
+    },
+    {
+      "run": "augfull",
+      "label": "+ SFT with identifier augmentation (v0.6.0 weights)",
+      "model": "sft-aug",
+      "items": 1034,
+      "matches": 222,
+      "exec_accuracy": 0.2147,
+      "std_error": 0.0128,
+      "exec_accuracy_nonempty_gold": 0.2085,
+      "status": {
+        "match": 222,
+        "pred_error": 674,
+        "mismatch": 136,
+        "gold_error": 2
+      },
+      "error_types": {
+        "unknown table": 75,
+        "syntax error": 66,
+        "unknown column": 533
+      }
+    },
+    {
+      "run": "augfullk",
+      "label": "+ schema-constrained decoding",
+      "model": "sft-aug",
+      "items": 1034,
+      "matches": 271,
+      "exec_accuracy": 0.2621,
+      "std_error": 0.0137,
+      "exec_accuracy_nonempty_gold": 0.2515,
+      "status": {
+        "match": 271,
+        "pred_error": 575,
+        "mismatch": 186,
+        "gold_error": 2
+      },
+      "error_types": {
+        "unknown table": 28,
+        "syntax error": 46,
+        "unknown column": 497,
+        "other error": 4
+      }
+    },
+    {
+      "run": "augfulls8",
+      "label": "+ 8 samples with execution-guided vote",
+      "model": "sft-aug",
+      "items": 1034,
+      "matches": 365,
+      "exec_accuracy": 0.353,
+      "std_error": 0.0149,
+      "exec_accuracy_nonempty_gold": 0.3493,
+      "status": {
+        "match": 365,
+        "mismatch": 371,
+        "pred_error": 296,
+        "gold_error": 2
+      },
+      "error_types": {
+        "unknown table": 13,
+        "unknown column": 258,
+        "syntax error": 23,
+        "other error": 2
+      }
+    }
+  ]
+}
