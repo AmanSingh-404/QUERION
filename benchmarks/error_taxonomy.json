@@ -1,0 +1,20 @@
+{
+  "run": "augfulls8",
+  "items": 1034,
+  "failures": 667,
+  "labels": {
+    "wrong tables or joins": 219,
+    "unknown column: table not in the query": 172,
+    "unknown column: wrong alias": 73,
+    "same structure, different result": 42,
+    "wrong selected columns": 39,
+    "wrong filter": 30,
+    "syntax error": 23,
+    "wrong aggregate": 22,
+    "unknown table": 13,
+    "unknown column: invented name": 13,
+    "wrong query shape (set operation or subquery)": 11,
+    "wrong grouping, ordering or limit": 8,
+    "other error": 2
+  }
+}

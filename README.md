@@ -35,7 +35,7 @@ per-question records and written to `benchmarks/accuracy.json`.
 ```
 git clone https://github.com/AmanSingh-404/QUERION
 cd QUERION
-pip install torch tokenizers safetensors huggingface_hub
+pip install torch numpy tokenizers safetensors huggingface_hub
 python -m scripts.ask path/to/database.sqlite "Show the name and country of every singer older than 30"
 ```
 
