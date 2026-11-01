@@ -58,6 +58,7 @@ def generate_batch(
 ):
     """k continuations of one prompt in one batch. Row 0 is greedy, the others sample.
 
+    The prompt is processed once and its cache is copied to all k rows.
     Returns k lists of new token ids (without the end token). eos_id must be a real token id."""
     model.eval()
     cfg = model.cfg
@@ -65,15 +66,21 @@ def generate_batch(
     if len(ids) > total:
         raise ValueError("prompt does not fit in the context window")
     dtype = next(model.parameters()).dtype
-    cache = KVCache(cfg, k, total, device, dtype)
     gen = torch.Generator(device=device)
     gen.manual_seed(seed)
     for c in constraints or []:
         c.reset()
-    logits, _ = model(torch.tensor([ids] * k, device=device), cache=cache, pos=0)
+    one = KVCache(cfg, 1, total, device, dtype)
+    logits, _ = model(torch.tensor([ids], device=device), cache=one, pos=0)
+    cache = KVCache(cfg, k, total, device, dtype)
+    n = len(ids)
+    for layer in range(cfg.n_layers):
+        cache.k[layer][:, :, :n] = one.k[layer][:, :, :n]
+        cache.v[layer][:, :, :n] = one.v[layer][:, :, :n]
+    logits = logits.expand(k, -1, -1)
     outs = [[] for _ in range(k)]
     done = [False] * k
-    pos = len(ids)
+    pos = n
     for _ in range(max_new):
         last = logits[:, -1].float()
         width = min(top_k, last.shape[-1])

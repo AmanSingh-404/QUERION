@@ -40,7 +40,7 @@ def main():
     samples = flag(extra, "samples", int, 1)
     temp = flag(extra, "temp", float, 0.7)
     dev_path = next((a for a in extra if a.endswith(".jsonl")), DEV)
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = "cpu" if "cpu" in extra or not torch.cuda.is_available() else "cuda"
     state = torch.load(ckpt, map_location="cpu", weights_only=True)
     model = Transformer(QUERION_100M)
     model.load_state_dict(state["model"])
