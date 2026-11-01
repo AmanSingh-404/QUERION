@@ -33,16 +33,22 @@ tokenizer (`tokenizer.json`).
 
 Spider dev, 1,034 questions. Metric: plain execution accuracy on the original dev
 databases (read-only SQLite). This is not Spider's official test-suite accuracy, which is
-stricter, so it is not comparable to leaderboard scores. Greedy decoding.
+stricter, so it is not comparable to leaderboard scores.
 
-| Model | Execution accuracy |
+| Decoding | Execution accuracy |
 |---|---|
-| Pretrained, zero-shot | 4.84% |
-| + SFT | 17.7% |
-| + SFT with identifier augmentation (this model) | 21.5% |
+| Pretrained model, zero-shot, greedy | 4.84% |
+| Fine-tuned, no identifier augmentation, greedy | 17.7% |
+| This model, greedy | 21.5% |
+| + schema-constrained decoding | 26.2% |
+| + 8 samples with execution-guided vote | 35.3% |
 
-Standard error is about 1.2 points. Most failures are schema errors: 533 of 674
-failing predictions name a column that does not exist.
+The last row runs candidate queries on the target database and returns the result most
+candidates agree on, so it needs database access at inference time. Gold answers are never
+used. The constrained decoding and the vote are in the `infer/` package of the GitHub repo.
+Standard error is about 1.5 points. Most remaining failures are wrong table choices: with
+the constraint on, 304 of 497 unknown-column errors name a column from a table the query
+does not use.
 
 ## Prompt format
 

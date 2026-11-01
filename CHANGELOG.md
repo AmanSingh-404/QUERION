@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.7.0 - Phase 9: Inference engine
+- KV cache decoding that reproduces uncached predictions exactly (0 of 100 differ) at 1.9x speed; training and eval paths untouched (141 tests pass)
+- Schema-constrained decoding: words limited to SQL words, schema words and aliases. Spider dev 21.5% to 26.2%, and the glued-keyword bug is gone
+- Batched sampling with execution-guided vote (8 candidates in one batch, errors and empty results dropped, majority result wins): Spider dev 26.2% to 35.3%, 20 minutes for the full set. Temperature and sample count tuned on 16 held-out databases, not on dev
+- Error analysis: 304 of 497 remaining unknown-column errors come from choosing the wrong table. Full write-up in docs/results.md
+
 ## v0.6.0 - Phases 6-8: Pretraining, fine-tuning, evaluation
 - Main pretraining run: 2B tokens in 43.3 compute hours on the RTX 4050, final validation loss 2.2786 on the planned mix
 - Evaluation harness: read-only SQLite executor with timeout and row cap, order-aware result comparator, Spider dev pipeline. The pretrained model scores 4.84% execution accuracy zero-shot
