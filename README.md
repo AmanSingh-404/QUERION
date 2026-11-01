@@ -30,6 +30,32 @@ per-question records and written to `benchmarks/accuracy.json`.
 - Standard error is about 1.5 points. Sampling settings were tuned on 16 held-out
   databases, not on dev. Details and error analysis: `docs/results.md`.
 
+## Quick start
+
+```
+git clone https://github.com/AmanSingh-404/QUERION
+cd QUERION
+pip install torch tokenizers safetensors huggingface_hub
+python -m scripts.ask path/to/database.sqlite "Show the name and country of every singer older than 30"
+```
+
+The first run downloads the weights (about 400 MB) from Hugging Face. The script reads the
+database schema, writes 8 candidate queries, runs them read-only and returns the result most
+of them agree on, together with how many agreed:
+
+```
+SELECT NAME, Country FROM singer WHERE Age > 30
+
+6 of 8 candidates returned the same result
+('Joe Sharp', 'Netherlands')
+('Timbaland', 'United States')
+('Rose White', 'France')
+('John Nizinik', 'France')
+```
+
+This is Spider's `concert_singer` database. Decoding takes roughly 3 seconds per question on an
+8-thread laptop CPU and about 1 second on an RTX 4050, plus model loading.
+
 ## How it works
 
 1. **Tokenizer.** 24k byte-level BPE trained on SQL and English (see below).
