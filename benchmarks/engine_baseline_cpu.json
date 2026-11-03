@@ -1,0 +1,39 @@
+{
+  "engine": "baseline: one request at a time, simple KV cache, greedy, no constraint",
+  "device": "cpu",
+  "workload": "16 Spider dev prompts, max 128 new tokens",
+  "method": "median of 2 runs after an 8-request warm-up",
+  "collected_at_commit": "933a07c",
+  "rows": [
+    {
+      "clients": 1,
+      "requests": 16,
+      "wall_seconds": 28.81,
+      "tokens_per_second": 16.4,
+      "requests_per_second": 0.56,
+      "latency_p50": 1.451,
+      "latency_p95": 4.511,
+      "ttft_p50": 0.398,
+      "ttft_p95": 1.347,
+      "wall_seconds_all": [
+        28.73,
+        28.81
+      ]
+    },
+    {
+      "clients": 4,
+      "requests": 16,
+      "wall_seconds": 28.79,
+      "tokens_per_second": 16.4,
+      "requests_per_second": 0.56,
+      "latency_p50": 6.643,
+      "latency_p95": 12.981,
+      "ttft_p50": 4.434,
+      "ttft_p95": 11.02,
+      "wall_seconds_all": [
+        28.57,
+        28.79
+      ]
+    }
+  ]
+}
