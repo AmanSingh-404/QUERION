@@ -1,0 +1,30 @@
+{"db": "dbs/smoke0.sqlite", "question": "Count the students with enrollment year under 2018.", "sql": "SELECT COUNT(*) FROM students WHERE enrollment_year < 2018", "kind": "count_num"}
+{"db": "dbs/smoke0.sqlite", "question": "How many students are there?", "sql": "SELECT COUNT(*) FROM students", "kind": "count_all"}
+{"db": "dbs/smoke0.sqlite", "question": "What are the major values of the top 5 students by highest gpa?", "sql": "SELECT major FROM students ORDER BY gpa DESC LIMIT 5", "kind": "order_limit"}
+{"db": "dbs/smoke1.sqlite", "question": "What is the maximum price for each destination in flights?", "sql": "SELECT destination, MAX(price) FROM flights GROUP BY destination", "kind": "group_agg"}
+{"db": "dbs/smoke1.sqlite", "question": "How many flights have destination equal to 'Warsaw' and price greater than 357?", "sql": "SELECT COUNT(*) FROM flights WHERE destination = 'Warsaw' AND price > 357", "kind": "and_cond"}
+{"db": "dbs/smoke1.sqlite", "question": "How many flights are there with destination 'Nairobi'?", "sql": "SELECT COUNT(*) FROM flights WHERE destination = 'Nairobi'", "kind": "count_text"}
+{"db": "dbs/smoke2.sqlite", "question": "How many directors are there for each country?", "sql": "SELECT country, COUNT(*) FROM directors GROUP BY country", "kind": "group_count"}
+{"db": "dbs/smoke2.sqlite", "question": "What is the total number of directors?", "sql": "SELECT COUNT(*) FROM directors", "kind": "count_all"}
+{"db": "dbs/smoke2.sqlite", "question": "What is the year of every record in films with title 'Frozen Lake'?", "sql": "SELECT year FROM films WHERE title = 'Frozen Lake'", "kind": "select_text"}
+{"db": "dbs/smoke3.sqlite", "question": "What is the rating of every record in films with genre 'romance'?", "sql": "SELECT rating FROM films WHERE genre = 'romance'", "kind": "select_text"}
+{"db": "dbs/smoke3.sqlite", "question": "For every film, show its rating and the country of the director it belongs to.", "sql": "SELECT T1.rating, T2.country FROM films AS T1 JOIN directors AS T2 ON T1.director_id = T2.id", "kind": "join_list"}
+{"db": "dbs/smoke3.sqlite", "question": "Count the films grouped by genre.", "sql": "SELECT genre, COUNT(*) FROM films GROUP BY genre", "kind": "group_count"}
+{"db": "dbs/smoke4.sqlite", "question": "What is the maximum founded year of all teams?", "sql": "SELECT MAX(founded_year) FROM teams", "kind": "agg"}
+{"db": "dbs/smoke4.sqlite", "question": "How many teams have city equal to 'Dublin' and founded year greater than 1892?", "sql": "SELECT COUNT(*) FROM teams WHERE city = 'Dublin' AND founded_year > 1892", "kind": "and_cond"}
+{"db": "dbs/smoke4.sqlite", "question": "What is the total number of teams?", "sql": "SELECT COUNT(*) FROM teams", "kind": "count_all"}
+{"db": "dbs/smoke5.sqlite", "question": "What are the reviewer of reviews whose restaurant has name 'Rising Tide'?", "sql": "SELECT T1.reviewer FROM reviews AS T1 JOIN restaurants AS T2 ON T1.restaurant_id = T2.id WHERE T2.name = 'Rising Tide'", "kind": "join_where"}
+{"db": "dbs/smoke5.sqlite", "question": "List all distinct city values in restaurants.", "sql": "SELECT DISTINCT city FROM restaurants", "kind": "distinct"}
+{"db": "dbs/smoke5.sqlite", "question": "Which restaurants have rating from 3.5 to 3.9? List their city.", "sql": "SELECT city FROM restaurants WHERE rating BETWEEN 3.5 AND 3.9", "kind": "between"}
+{"db": "dbs/smoke6.sqlite", "question": "What are the name values of the top 4 agents by highest experience years?", "sql": "SELECT name FROM agents ORDER BY experience_years DESC LIMIT 4", "kind": "order_limit"}
+{"db": "dbs/smoke6.sqlite", "question": "What is the maximum experience years for each name in agents?", "sql": "SELECT name, MAX(experience_years) FROM agents GROUP BY name", "kind": "group_agg"}
+{"db": "dbs/smoke6.sqlite", "question": "What is the experience years of every record in agents with name Sam?", "sql": "SELECT experience_years FROM agents WHERE name = 'Sam'", "kind": "select_text"}
+{"db": "dbs/smoke7.sqlite", "question": "For each student, count their grades and show the major.", "sql": "SELECT T2.major, COUNT(*) FROM grades AS T1 JOIN students AS T2 ON T1.student_id = T2.id GROUP BY T2.id", "kind": "join_count"}
+{"db": "dbs/smoke7.sqlite", "question": "What is the minimum semester of all grades?", "sql": "SELECT MIN(semester) FROM grades", "kind": "agg"}
+{"db": "dbs/smoke7.sqlite", "question": "List the score of all grades belonging to a student with major equal to Chemistry.", "sql": "SELECT T1.score FROM grades AS T1 JOIN students AS T2 ON T1.student_id = T2.id WHERE T2.major = 'Chemistry'", "kind": "join_where"}
+{"db": "dbs/smoke8.sqlite", "question": "Which professors have years from 21 to 29? List their name.", "sql": "SELECT name FROM professors WHERE years BETWEEN 21 AND 29", "kind": "between"}
+{"db": "dbs/smoke8.sqlite", "question": "For each professor, count their papers and show the department.", "sql": "SELECT T2.department, COUNT(*) FROM papers AS T1 JOIN professors AS T2 ON T1.professor_id = T2.id GROUP BY T2.id", "kind": "join_count"}
+{"db": "dbs/smoke8.sqlite", "question": "For every paper, show its venue and the years of the professor it belongs to.", "sql": "SELECT T1.venue, T2.years FROM papers AS T1 JOIN professors AS T2 ON T1.professor_id = T2.id", "kind": "join_list"}
+{"db": "dbs/smoke9.sqlite", "question": "What are the order year values of the top 3 orders by highest total?", "sql": "SELECT order_year FROM orders ORDER BY total DESC LIMIT 3", "kind": "order_limit"}
+{"db": "dbs/smoke9.sqlite", "question": "Which customers have age greater than 19? Give their city.", "sql": "SELECT city FROM customers WHERE age > 19", "kind": "select_num"}
+{"db": "dbs/smoke9.sqlite", "question": "For every status, find the maximum order year of orders.", "sql": "SELECT status, MAX(order_year) FROM orders GROUP BY status", "kind": "group_agg"}
