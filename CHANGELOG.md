@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.8.0 - Phase 8: Evaluation harness
+- Every accuracy number is now produced by a script: `scripts/collect_benchmarks.py` rebuilds `benchmarks/accuracy.json` from saved per-question records (Spider dev, five stages from 4.8% to 35.3%)
+- Rule-based failure taxonomy (`eval/taxonomy.py`) with a 40-item review: 71.5% of the 667 failures are table or join choice. Write-up in docs/error_analysis.md
+- CI smoke test: 30 synthetic questions on small SQLite files, run on CPU against the published weights on every push to main (30 of 30, about 1 minute)
+- `scripts/ask.py` quick start verified in a clean environment, and the README rewritten with results, limits and quick start
+
 ## v0.7.0 - Phase 9: Inference engine
 - KV cache decoding that reproduces uncached predictions exactly (0 of 100 differ) at 1.9x speed; training and eval paths untouched (141 tests pass)
 - Schema-constrained decoding: words limited to SQL words, schema words and aliases. Spider dev 21.5% to 26.2%, and the glued-keyword bug is gone
