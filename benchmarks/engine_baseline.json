@@ -1,75 +1,77 @@
 {
   "engine": "baseline: one request at a time, simple KV cache, greedy, no constraint",
+  "slots": null,
   "device": "NVIDIA GeForce RTX 4050 Laptop GPU",
   "workload": "32 Spider dev prompts, max 128 new tokens",
-  "method": "median of 3 runs after an 8-request warm-up",
-  "collected_at_commit": "933a07c",
+  "method": "median of 3 runs after a 16-request warm-up",
+  "outputs_differing_from_baseline": null,
+  "collected_at_commit": "c12d131",
   "rows": [
     {
       "clients": 1,
       "requests": 32,
-      "wall_seconds": 24.46,
-      "tokens_per_second": 40.4,
-      "requests_per_second": 1.31,
-      "latency_p50": 0.57,
-      "latency_p95": 2.279,
-      "ttft_p50": 0.032,
-      "ttft_p95": 0.067,
+      "wall_seconds": 20.0,
+      "tokens_per_second": 49.4,
+      "requests_per_second": 1.6,
+      "latency_p50": 0.461,
+      "latency_p95": 1.858,
+      "ttft_p50": 0.025,
+      "ttft_p95": 0.058,
       "wall_seconds_all": [
-        23.89,
-        24.46,
-        24.61
+        19.87,
+        20.0,
+        20.88
       ],
       "peak_gpu_gb": 0.49
     },
     {
       "clients": 4,
       "requests": 32,
-      "wall_seconds": 24.73,
-      "tokens_per_second": 40.0,
-      "requests_per_second": 1.29,
-      "latency_p50": 2.815,
-      "latency_p95": 4.595,
-      "ttft_p50": 2.109,
-      "ttft_p95": 3.82,
+      "wall_seconds": 18.83,
+      "tokens_per_second": 52.5,
+      "requests_per_second": 1.7,
+      "latency_p50": 2.262,
+      "latency_p95": 3.577,
+      "ttft_p50": 1.581,
+      "ttft_p95": 3.058,
       "wall_seconds_all": [
-        24.65,
-        24.73,
-        24.83
+        18.64,
+        18.83,
+        19.64
       ],
       "peak_gpu_gb": 0.49
     },
     {
       "clients": 8,
       "requests": 32,
-      "wall_seconds": 25.08,
-      "tokens_per_second": 39.4,
-      "requests_per_second": 1.28,
-      "latency_p50": 6.32,
-      "latency_p95": 8.332,
-      "ttft_p50": 5.686,
-      "ttft_p95": 7.333,
+      "wall_seconds": 22.16,
+      "tokens_per_second": 44.6,
+      "requests_per_second": 1.44,
+      "latency_p50": 5.467,
+      "latency_p95": 7.266,
+      "ttft_p50": 4.942,
+      "ttft_p95": 6.238,
       "wall_seconds_all": [
-        24.88,
-        25.08,
-        25.12
+        19.55,
+        22.16,
+        24.47
       ],
       "peak_gpu_gb": 0.49
     },
     {
       "clients": 16,
       "requests": 32,
-      "wall_seconds": 25.21,
-      "tokens_per_second": 39.2,
-      "requests_per_second": 1.27,
-      "latency_p50": 12.387,
-      "latency_p95": 15.348,
-      "ttft_p50": 11.818,
-      "ttft_p95": 14.017,
+      "wall_seconds": 19.44,
+      "tokens_per_second": 50.8,
+      "requests_per_second": 1.65,
+      "latency_p50": 9.406,
+      "latency_p95": 11.586,
+      "ttft_p50": 8.946,
+      "ttft_p95": 11.049,
       "wall_seconds_all": [
-        24.88,
-        25.21,
-        25.59
+        18.28,
+        19.44,
+        20.81
       ],
       "peak_gpu_gb": 0.49
     }
