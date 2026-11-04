@@ -1,0 +1,102 @@
+{
+  "method": "interleaved: 5 repeats, each runs both engines back to back with alternating order; speedup is batched tokens/s over baseline tokens/s of the same repeat; rows show the median run of each engine",
+  "device": "NVIDIA GeForce RTX 4050 Laptop GPU",
+  "workload": "32 Spider dev prompts, greedy, max 128 new tokens",
+  "slots": 16,
+  "collected_at_commit": "3fb6905",
+  "rows": [
+    {
+      "clients": 1,
+      "baseline": {
+        "requests": 32,
+        "wall_seconds": 22.11,
+        "tokens_per_second": 44.7,
+        "requests_per_second": 1.45,
+        "latency_p50": 0.479,
+        "latency_p95": 1.95,
+        "ttft_p50": 0.027,
+        "ttft_p95": 0.093
+      },
+      "batched": {
+        "requests": 32,
+        "wall_seconds": 20.94,
+        "tokens_per_second": 47.2,
+        "requests_per_second": 1.53,
+        "latency_p50": 0.469,
+        "latency_p95": 1.911,
+        "ttft_p50": 0.024,
+        "ttft_p95": 0.055
+      },
+      "speedup_median": 0.86,
+      "speedup_all": [
+        1.09,
+        1.06,
+        0.79,
+        0.5,
+        0.86
+      ]
+    },
+    {
+      "clients": 4,
+      "baseline": {
+        "requests": 32,
+        "wall_seconds": 17.96,
+        "tokens_per_second": 55.0,
+        "requests_per_second": 1.78,
+        "latency_p50": 2.149,
+        "latency_p95": 3.304,
+        "ttft_p50": 1.503,
+        "ttft_p95": 2.731
+      },
+      "batched": {
+        "requests": 32,
+        "wall_seconds": 5.78,
+        "tokens_per_second": 171.0,
+        "requests_per_second": 5.54,
+        "latency_p50": 0.517,
+        "latency_p95": 2.096,
+        "ttft_p50": 0.021,
+        "ttft_p95": 0.059
+      },
+      "speedup_median": 3.08,
+      "speedup_all": [
+        3.24,
+        3.16,
+        3.04,
+        3.08,
+        2.95
+      ]
+    },
+    {
+      "clients": 16,
+      "baseline": {
+        "requests": 32,
+        "wall_seconds": 20.72,
+        "tokens_per_second": 47.7,
+        "requests_per_second": 1.54,
+        "latency_p50": 10.181,
+        "latency_p95": 12.726,
+        "ttft_p50": 9.674,
+        "ttft_p95": 11.676
+      },
+      "batched": {
+        "requests": 32,
+        "wall_seconds": 3.79,
+        "tokens_per_second": 260.9,
+        "requests_per_second": 8.45,
+        "latency_p50": 0.913,
+        "latency_p95": 2.763,
+        "ttft_p50": 0.055,
+        "ttft_p95": 0.392
+      },
+      "speedup_median": 5.39,
+      "speedup_all": [
+        5.35,
+        5.29,
+        5.44,
+        5.55,
+        5.39
+      ]
+    }
+  ]
+}
