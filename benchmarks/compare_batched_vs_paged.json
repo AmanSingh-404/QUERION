@@ -1,0 +1,84 @@
+{
+  "method": "interleaved: 5 repeats, each runs both engines back to back with alternating order; speedup is paged tokens/s over batched tokens/s of the same repeat; rows show the median run of each engine",
+  "device": "NVIDIA GeForce RTX 4050 Laptop GPU",
+  "workload": "32 Spider dev prompts, greedy, max 128 new tokens",
+  "slots": 16,
+  "blocks": 1024,
+  "collected_at_commit": "d468dcc",
+  "rows": [
+    {
+      "clients": 4,
+      "batched": {
+        "requests": 32,
+        "failed": 0,
+        "wall_seconds": 6.15,
+        "tokens_per_second": 160.7,
+        "requests_per_second": 5.21,
+        "latency_p50": 0.544,
+        "latency_p95": 2.277,
+        "ttft_p50": 0.022,
+        "ttft_p95": 0.057,
+        "kv_reserved_gb": 0.805
+      },
+      "paged": {
+        "requests": 32,
+        "failed": 0,
+        "wall_seconds": 6.41,
+        "tokens_per_second": 154.1,
+        "requests_per_second": 4.99,
+        "latency_p50": 0.539,
+        "latency_p95": 2.353,
+        "ttft_p50": 0.023,
+        "ttft_p95": 0.077,
+        "kv_reserved_gb": 0.403,
+        "kv_peak_used_gb": 0.076,
+        "fragmentation": 0.018
+      },
+      "speedup_median": 0.96,
+      "speedup_all": [
+        0.97,
+        0.96,
+        0.92,
+        0.97,
+        0.96
+      ]
+    },
+    {
+      "clients": 16,
+      "batched": {
+        "requests": 32,
+        "failed": 0,
+        "wall_seconds": 3.59,
+        "tokens_per_second": 275.0,
+        "requests_per_second": 8.91,
+        "latency_p50": 0.869,
+        "latency_p95": 2.639,
+        "ttft_p50": 0.066,
+        "ttft_p95": 0.371,
+        "kv_reserved_gb": 0.805
+      },
+      "paged": {
+        "requests": 32,
+        "failed": 0,
+        "wall_seconds": 3.79,
+        "tokens_per_second": 260.6,
+        "requests_per_second": 8.44,
+        "latency_p50": 0.92,
+        "latency_p95": 2.75,
+        "ttft_p50": 0.083,
+        "ttft_p95": 0.466,
+        "kv_reserved_gb": 0.403,
+        "kv_peak_used_gb": 0.213,
+        "fragmentation": 0.016
+      },
+      "speedup_median": 0.94,
+      "speedup_all": [
+        1.01,
+        0.94,
+        0.96,
+        0.93,
+        0.94
+      ]
+    }
+  ]
+}

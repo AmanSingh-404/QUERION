@@ -1,0 +1,47 @@
+{
+  "method": "interleaved: 5 repeats, each runs both engines back to back with alternating order; speedup is paged tokens/s over batched tokens/s of the same repeat; rows show the median run of each engine",
+  "device": "NVIDIA GeForce RTX 4050 Laptop GPU",
+  "workload": "32 Spider dev prompts, greedy, max 128 new tokens",
+  "slots": 16,
+  "blocks": 512,
+  "collected_at_commit": "d468dcc",
+  "rows": [
+    {
+      "clients": 16,
+      "batched": {
+        "requests": 32,
+        "failed": 0,
+        "wall_seconds": 3.53,
+        "tokens_per_second": 280.0,
+        "requests_per_second": 9.07,
+        "latency_p50": 0.847,
+        "latency_p95": 2.573,
+        "ttft_p50": 0.059,
+        "ttft_p95": 0.356,
+        "kv_reserved_gb": 0.805
+      },
+      "paged": {
+        "requests": 32,
+        "failed": 0,
+        "wall_seconds": 3.73,
+        "tokens_per_second": 264.9,
+        "requests_per_second": 8.58,
+        "latency_p50": 0.907,
+        "latency_p95": 2.71,
+        "ttft_p50": 0.091,
+        "ttft_p95": 0.434,
+        "kv_reserved_gb": 0.201,
+        "kv_peak_used_gb": 0.195,
+        "fragmentation": 0.019
+      },
+      "speedup_median": 0.96,
+      "speedup_all": [
+        0.99,
+        0.96,
+        0.94,
+        0.96,
+        0.92
+      ]
+    }
+  ]
+}
