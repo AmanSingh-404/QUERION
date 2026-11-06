@@ -126,6 +126,8 @@ class PagedSequence:
 class PagedServer:
     """Continuous batching over a paged KV cache: blocks are borrowed as sequences grow."""
 
+    allocator_class = BlockAllocator
+
     def __init__(
         self,
         model,
@@ -141,7 +143,7 @@ class PagedServer:
         self.max_len = max_len or model.cfg.max_seq_len
         dtype = next(model.parameters()).dtype
         self.pool = BlockPool(model.cfg, num_blocks, block_size, device, dtype)
-        self.alloc = BlockAllocator(num_blocks)
+        self.alloc = self.allocator_class(num_blocks)
         self.max_seqs, self.max_admit = max_seqs, max_admit
         self.active, self.waiting = [], deque()
         self.closing = False
