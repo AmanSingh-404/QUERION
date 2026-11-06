@@ -1,0 +1,110 @@
+{
+  "method": "interleaved: 5 repeats, each runs both engines back to back with alternating order; speedup is prefix over paged of the same repeat (tokens per second; ttft_speedup is the p50 time to first token of paged divided by that of prefix); rows show the median run of each engine",
+  "device": "NVIDIA GeForce RTX 4050 Laptop GPU",
+  "workload": "32 dev prompts (evenly spread questions), greedy, max 128 new tokens",
+  "slots": 16,
+  "blocks": 1024,
+  "collected_at_commit": "50b1fb2",
+  "rows": [
+    {
+      "clients": 4,
+      "paged": {
+        "requests": 32,
+        "failed": 0,
+        "wall_seconds": 5.43,
+        "tokens_per_second": 182.1,
+        "requests_per_second": 5.9,
+        "latency_p50": 0.467,
+        "latency_p95": 1.985,
+        "ttft_p50": 0.02,
+        "ttft_p95": 0.069,
+        "kv_reserved_gb": 0.403,
+        "kv_peak_used_gb": 0.076,
+        "fragmentation": 0.017
+      },
+      "prefix": {
+        "requests": 32,
+        "failed": 0,
+        "wall_seconds": 5.34,
+        "tokens_per_second": 185.1,
+        "requests_per_second": 6.0,
+        "latency_p50": 0.47,
+        "latency_p95": 1.931,
+        "ttft_p50": 0.021,
+        "ttft_p95": 0.079,
+        "kv_reserved_gb": 0.403,
+        "kv_peak_used_gb": 0.059,
+        "fragmentation": 0.017,
+        "prompt_tokens": 13872,
+        "cached_tokens": 7584,
+        "prefix_hit_rate": 0.547
+      },
+      "speedup_median": 1.02,
+      "speedup_all": [
+        1.04,
+        1.02,
+        1.01,
+        1.02,
+        1.0
+      ],
+      "ttft_speedup_median": 1.05,
+      "ttft_speedup_all": [
+        1.5,
+        1.05,
+        1.71,
+        0.95,
+        0.95
+      ]
+    },
+    {
+      "clients": 16,
+      "paged": {
+        "requests": 32,
+        "failed": 0,
+        "wall_seconds": 3.28,
+        "tokens_per_second": 301.0,
+        "requests_per_second": 9.75,
+        "latency_p50": 0.809,
+        "latency_p95": 2.411,
+        "ttft_p50": 0.069,
+        "ttft_p95": 0.357,
+        "kv_reserved_gb": 0.403,
+        "kv_peak_used_gb": 0.213,
+        "fragmentation": 0.018
+      },
+      "prefix": {
+        "requests": 32,
+        "failed": 0,
+        "wall_seconds": 3.16,
+        "tokens_per_second": 312.6,
+        "requests_per_second": 10.12,
+        "latency_p50": 0.766,
+        "latency_p95": 2.304,
+        "ttft_p50": 0.065,
+        "ttft_p95": 0.363,
+        "kv_reserved_gb": 0.403,
+        "kv_peak_used_gb": 0.133,
+        "fragmentation": 0.016,
+        "prompt_tokens": 13872,
+        "cached_tokens": 7584,
+        "prefix_hit_rate": 0.547
+      },
+      "speedup_median": 1.04,
+      "speedup_all": [
+        1.04,
+        1.04,
+        0.98,
+        1.05,
+        1.04
+      ],
+      "ttft_speedup_median": 1.06,
+      "ttft_speedup_all": [
+        0.85,
+        1.06,
+        1.31,
+        1.19,
+        1.05
+      ]
+    }
+  ]
+}

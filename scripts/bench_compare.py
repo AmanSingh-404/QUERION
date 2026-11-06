@@ -12,15 +12,19 @@ from engine.baseline import BaselineServer
 from engine.batched import BatchedServer
 from engine.bench import run_closed_loop, summarize
 from engine.paged import PagedServer
+from engine.prefix import PrefixServer
 from scripts.ask import load
 from scripts.bench_engine import WARMUP, build_requests
+from scripts.verify_prefix import clustered_requests
 from tokenizer.special_tokens import EOS_ID
 
 OUT = Path(__file__).resolve().parents[1] / "benchmarks"
-KINDS = ["baseline", "batched", "paged"]
+KINDS = ["baseline", "batched", "paged", "prefix"]
 
 
 def make_server(kind, model, device, slots, blocks):
+    if kind == "prefix":
+        return PrefixServer(model, EOS_ID, device, num_blocks=blocks, max_seqs=slots)
     if kind == "paged":
         return PagedServer(model, EOS_ID, device, num_blocks=blocks, max_seqs=slots)
     if kind == "batched":
@@ -37,6 +41,10 @@ def kv_stats(server):
     if hasattr(server, "kv_peak_gb"):
         stats["kv_peak_used_gb"] = round(server.kv_peak_gb, 3)
         stats["fragmentation"] = round(server.fragmentation, 3)
+    if hasattr(server, "cached_tokens"):
+        stats["prompt_tokens"] = server.prompt_tokens
+        stats["cached_tokens"] = server.cached_tokens
+        stats["prefix_hit_rate"] = round(server.hit_rate, 3)
     return stats
 
 
@@ -68,12 +76,14 @@ def main():
     p.add_argument("--max-new", type=int, default=128)
     p.add_argument("--clients", default="1,4,16")
     p.add_argument("--repeats", type=int, default=5)
+    p.add_argument("--clustered", action="store_true")
     p.add_argument("--name", default=None)
     args = p.parse_args()
     faulthandler.dump_traceback_later(3600, exit=True)
 
     model, tok = load(args.weights, args.device)
-    requests = build_requests(tok, args.root, args.requests, args.max_new)
+    build = clustered_requests if args.clustered else build_requests
+    requests = build(tok, args.root, args.requests, args.max_new)
     for kind in (args.a, args.b):
         warm = make_server(kind, model, args.device, args.slots, args.blocks)
         for request in requests[:WARMUP]:
@@ -84,7 +94,7 @@ def main():
     rows = []
     for clients in [int(c) for c in args.clients.split(",")]:
         runs = {args.a: [], args.b: []}
-        ratios = []
+        ratios, ttft_ratios = [], []
         for i in range(args.repeats):
             order = (args.a, args.b) if i % 2 == 0 else (args.b, args.a)
             done = {}
@@ -93,28 +103,35 @@ def main():
                     kind, model, requests, clients, args.device, args.slots, args.blocks
                 )
                 runs[kind].append(done[kind])
-            ratios.append(done[args.b]["tokens_per_second"] / done[args.a]["tokens_per_second"])
+            a_run, b_run = done[args.a], done[args.b]
+            ratios.append(b_run["tokens_per_second"] / a_run["tokens_per_second"])
+            ttft_ratios.append(a_run["ttft_p50"] / max(b_run["ttft_p50"], 1e-6))
         row = {
             "clients": clients,
             args.a: median_run(runs[args.a]),
             args.b: median_run(runs[args.b]),
             "speedup_median": round(statistics.median(ratios), 2),
             "speedup_all": [round(r, 2) for r in ratios],
+            "ttft_speedup_median": round(statistics.median(ttft_ratios), 2),
+            "ttft_speedup_all": [round(r, 2) for r in ttft_ratios],
         }
         print(json.dumps(row), flush=True)
         rows.append(row)
 
     git = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True)
+    shape = "first questions in dev order" if args.clustered else "evenly spread questions"
+    workload = f"{len(requests)} dev prompts ({shape}), greedy, max {args.max_new} new tokens"
     result = {
         "method": (
             f"interleaved: {args.repeats} repeats, each runs both engines back to back with "
-            f"alternating order; speedup is {args.b} tokens/s over {args.a} tokens/s of the "
-            "same repeat; rows show the median run of each engine"
+            f"alternating order; speedup is {args.b} over {args.a} of the same repeat "
+            "(tokens per second; ttft_speedup is the p50 time to first token of "
+            f"{args.a} divided by that of {args.b}); rows show the median run of each engine"
         ),
         "device": torch.cuda.get_device_name(0) if args.device == "cuda" else "cpu",
-        "workload": f"{len(requests)} Spider dev prompts, greedy, max {args.max_new} new tokens",
+        "workload": workload,
         "slots": args.slots,
-        "blocks": args.blocks if "paged" in (args.a, args.b) else None,
+        "blocks": args.blocks if {"paged", "prefix"} & {args.a, args.b} else None,
         "collected_at_commit": git.stdout.strip(),
         "rows": rows,
     }
