@@ -2,7 +2,7 @@ import queue
 import threading
 import time
 from collections import deque
-from concurrent.futures import Future
+from concurrent.futures import Future, InvalidStateError
 from dataclasses import dataclass
 
 import torch
@@ -111,8 +111,22 @@ def decode_step_paged(model, pool, tokens, tables, positions):
     return model.lm_head(model.norm(x))[:, 0]
 
 
+def settle(future, result=None, error=None):
+    """Complete a future unless its caller already cancelled it."""
+    if future.cancelled():
+        return
+    try:
+        if error is not None:
+            future.set_exception(error)
+        else:
+            future.set_result(result)
+    except InvalidStateError:
+        pass
+
+
 @dataclass
 class PagedSequence:
+    request: object
     future: Future
     pos: int
     total: int
@@ -121,10 +135,16 @@ class PagedSequence:
     first_at: float
     next_token: int
     blocks: list
+    alive: bool = True
 
 
 class PagedServer:
-    """Continuous batching over a paged KV cache: blocks are borrowed as sequences grow."""
+    """Continuous batching over a paged KV cache, with a full request lifecycle.
+
+    A request can be cancelled through its future or given a timeout. A prompt that cannot
+    fit is refused. When the pool runs out of blocks the youngest running request is
+    preempted: its blocks are returned and it restarts later, so older requests always
+    make progress."""
 
     allocator_class = BlockAllocator
 
@@ -147,15 +167,23 @@ class PagedServer:
         self.max_seqs, self.max_admit = max_seqs, max_admit
         self.active, self.waiting = [], deque()
         self.closing = False
+        self.failure = None
         self.peak_blocks = 0
         self.peak_cap = self.peak_used = 0
+        self.preemptions = 0
+        self.timeouts = 0
         self.queue = queue.Queue()
-        self.worker = threading.Thread(target=self._loop, daemon=True)
+        self.worker = threading.Thread(target=self._run, daemon=True)
         self.worker.start()
 
     def submit(self, request):
         future = Future()
-        self.queue.put((request, future))
+        timeout = getattr(request, "timeout", None)
+        future.deadline = None if timeout is None else time.monotonic() + timeout
+        if self.failure is not None:
+            future.set_exception(RuntimeError("the server stopped after an internal error"))
+        else:
+            self.queue.put((request, future))
         return future
 
     def close(self):
@@ -175,6 +203,41 @@ class PagedServer:
         """Share of allocated block space not holding tokens, at the moment of peak use."""
         return 1 - self.peak_used / self.peak_cap if self.peak_cap else 0.0
 
+    # hooks that PrefixServer overrides
+    def _match(self, ids, bs, limit):
+        return []
+
+    def _prefill(self, ids, blocks, start):
+        n = len(ids)
+        one = KVCache(self.model.cfg, 1, n, self.device, self.pool.k[0].dtype)
+        with torch.no_grad():
+            logits, _ = self.model(torch.tensor([ids], device=self.device), cache=one, pos=0)
+        write_prompt(self.pool, one, n, blocks)
+        return logits[0, -1]
+
+    def _register(self, ids, bs, blocks, matched, n):
+        pass
+
+    def _run(self):
+        try:
+            self._loop()
+        except Exception as e:  # a bug must not leave callers waiting forever
+            self.failure = e
+            for s in self.active:
+                settle(s.future, error=e)
+                self._release(s)
+            self.active = []
+            pending = list(self.waiting)
+            while True:
+                try:
+                    item = self.queue.get_nowait()
+                except queue.Empty:
+                    break
+                if item is not None:
+                    pending.append(item)
+            for _, future in pending:
+                settle(future, error=e)
+
     def _loop(self):
         while True:
             if not self.active and not self.waiting and not self.closing:
@@ -191,6 +254,7 @@ class PagedServer:
                     self.closing = True
                 else:
                     self.waiting.append(item)
+            self._expire()
             admitted = 0
             while self.waiting and len(self.active) < self.max_seqs and admitted < self.max_admit:
                 if not self._admit(self.waiting[0]):
@@ -202,61 +266,113 @@ class PagedServer:
             elif self.closing and not self.waiting:
                 return
 
-    def _admit(self, item):
-        """Start a request. Returns False if it has to wait for blocks to be freed."""
-        request, future = item
-        ids, n = request.ids, len(request.ids)
-        bs = self.pool.block_size
-        need = -(-n // bs)
-        if n + 1 > self.max_len:
-            future.set_exception(ValueError(f"prompt of {n} tokens does not fit in {self.max_len}"))
-            return True
-        if need > self.alloc.num_blocks:
-            future.set_exception(OutOfBlocks(f"prompt needs {need} blocks, pool has fewer"))
-            return True
-        if self.alloc.free_blocks < need + len(self.active):
-            return False
-        blocks = []
-        try:
-            total = min(n + request.max_new, self.max_len)
-            one = KVCache(self.model.cfg, 1, n, self.device, self.pool.k[0].dtype)
-            with torch.no_grad():
-                logits, _ = self.model(torch.tensor([ids], device=self.device), cache=one, pos=0)
-            token = int(logits[0, -1].argmax())
-            first = time.perf_counter()
-            if token == self.eos_id or request.max_new <= 1 or n >= total:
-                future.set_result({"tokens": 1, "first_token_at": first, "ids": [token]})
-                return True
-            blocks = [self.alloc.allocate() for _ in range(need)]
-            write_prompt(self.pool, one, n, blocks)
-            seq = PagedSequence(future, n, total, request.max_new, [token], first, token, blocks)
-            self.active.append(seq)
-        except Exception as e:  # report the failure to the caller, keep the server alive
-            for b in blocks:
-                self.alloc.free(b)
-            future.set_exception(e)
-        return True
+    @staticmethod
+    def _late(future, now):
+        deadline = getattr(future, "deadline", None)
+        return deadline is not None and now >= deadline
+
+    def _expire(self):
+        """Drop cancelled requests and fail the ones past their deadline."""
+        now = time.monotonic()
+        keep = deque()
+        for request, future in self.waiting:
+            if future.cancelled():
+                continue
+            if self._late(future, now):
+                settle(future, error=TimeoutError("request timed out"))
+                self.timeouts += 1
+                continue
+            keep.append((request, future))
+        self.waiting = keep
+        for s in list(self.active):
+            if s.future.cancelled():
+                self._drop(s)
+            elif self._late(s.future, now):
+                settle(s.future, error=TimeoutError("request timed out"))
+                self.timeouts += 1
+                self._drop(s)
 
     def _release(self, seq):
         for b in seq.blocks:
             self.alloc.free(b)
         seq.blocks = []
 
-    def _step(self):
+    def _drop(self, seq):
+        seq.alive = False
+        self._release(seq)
+        self.active = [s for s in self.active if s is not seq]
+
+    def _preempt(self, seq):
+        """Give the blocks back and put the request at the front of the line."""
+        self._drop(seq)
+        self.waiting.appendleft((seq.request, seq.future))
+        self.preemptions += 1
+
+    def _admit(self, item):
+        """Start a request. Returns False if it has to wait for blocks to be freed."""
+        request, future = item
+        if future.cancelled():
+            return True
+        ids, n = request.ids, len(request.ids)
         bs = self.pool.block_size
-        ready = []
-        for s in self.active:
-            if s.pos // bs == len(s.blocks):  # the next token starts a new block
+        need = -(-n // bs)
+        if n + 1 > self.max_len:
+            settle(future, error=ValueError(f"prompt of {n} tokens does not fit in {self.max_len}"))
+            return True
+        if need > self.alloc.num_blocks:
+            settle(future, error=OutOfBlocks(f"prompt needs {need} blocks, pool has fewer"))
+            return True
+        matched = self._match(ids, bs, (n - 1) // bs)
+        if self.alloc.free_blocks < need - len(matched) + len(self.active):
+            for b in matched:
+                self.alloc.free(b)
+            return False
+        blocks = list(matched)
+        try:
+            total = min(n + request.max_new, self.max_len)
+            for _ in range(need - len(matched)):
+                blocks.append(self.alloc.allocate())
+            logits = self._prefill(ids, blocks, len(matched) * bs)
+            token = int(logits.argmax())
+            first = time.perf_counter()
+            self._register(ids, bs, blocks, len(matched), n)
+            if token == self.eos_id or request.max_new <= 1 or n >= total:
+                for b in blocks:
+                    self.alloc.free(b)
+                settle(future, {"tokens": 1, "first_token_at": first, "ids": [token]})
+                return True
+            seq = PagedSequence(
+                request, future, n, total, request.max_new, [token], first, token, blocks
+            )
+            self.active.append(seq)
+        except Exception as e:  # report the failure to the caller, keep the server alive
+            for b in blocks:
+                self.alloc.free(b)
+            settle(future, error=e)
+        return True
+
+    def _grow(self):
+        """Give every sequence whose next token starts a new block that block."""
+        bs = self.pool.block_size
+        for s in list(self.active):
+            while s.alive and s.pos // bs == len(s.blocks):
                 try:
                     s.blocks.append(self.alloc.allocate())
                 except OutOfBlocks as e:
-                    s.future.set_exception(e)
-                    self._release(s)
-                    continue
-            ready.append(s)
-        self.active = ready
+                    victim = self.active[-1]  # the youngest running request
+                    if victim is s and len(self.active) == 1:
+                        settle(s.future, error=e)  # it does not fit even alone
+                        self._drop(s)
+                    else:
+                        self._preempt(victim)
+
+    def _step(self):
+        self._expire()
+        self._grow()
+        ready = list(self.active)
         if not ready:
             return
+        bs = self.pool.block_size
         in_use = self.alloc.num_blocks - self.alloc.free_blocks
         self.peak_blocks = max(self.peak_blocks, in_use)
         cap = sum(len(s.blocks) for s in ready) * bs
@@ -273,7 +389,7 @@ class PagedServer:
             chosen = logits.argmax(-1).tolist()
         except Exception as e:
             for s in ready:
-                s.future.set_exception(e)
+                settle(s.future, error=e)
                 self._release(s)
             self.active = []
             return
@@ -283,7 +399,7 @@ class PagedServer:
             s.out.append(token)
             if token == self.eos_id or s.pos >= s.total or len(s.out) >= s.max_new:
                 result = {"tokens": len(s.out), "first_token_at": s.first_at, "ids": s.out}
-                s.future.set_result(result)
+                settle(s.future, result)
                 self._release(s)
             else:
                 s.next_token = token

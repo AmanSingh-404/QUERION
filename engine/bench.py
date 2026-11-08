@@ -9,6 +9,7 @@ import numpy as np
 class Request:
     ids: list
     max_new: int = 128
+    timeout: float | None = None
 
 
 def percentile(values, q):

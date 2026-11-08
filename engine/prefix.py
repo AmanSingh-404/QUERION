@@ -1,10 +1,9 @@
-import time
 from collections import OrderedDict
 
 import torch
 import torch.nn.functional as F
 
-from engine.paged import BlockAllocator, OutOfBlocks, PagedSequence, PagedServer
+from engine.paged import BlockAllocator, OutOfBlocks, PagedServer
 from model.layers import apply_rope
 
 
@@ -128,42 +127,13 @@ class PrefixServer(PagedServer):
     def hit_rate(self):
         return self.cached_tokens / self.prompt_tokens if self.prompt_tokens else 0.0
 
-    def _admit(self, item):
-        request, future = item
-        ids, n = request.ids, len(request.ids)
-        bs = self.pool.block_size
-        need = -(-n // bs)
-        if n + 1 > self.max_len:
-            future.set_exception(ValueError(f"prompt of {n} tokens does not fit in {self.max_len}"))
-            return True
-        if need > self.alloc.num_blocks:
-            future.set_exception(OutOfBlocks(f"prompt needs {need} blocks, pool has fewer"))
-            return True
-        matched = self.alloc.match(ids, bs, (n - 1) // bs)
-        if self.alloc.free_blocks < need - len(matched) + len(self.active):
-            for b in matched:
-                self.alloc.free(b)
-            return False
-        blocks = list(matched)
-        try:
-            total = min(n + request.max_new, self.max_len)
-            for _ in range(need - len(matched)):
-                blocks.append(self.alloc.allocate())
-            logits = prefill_paged(self.model, self.pool, ids, blocks, len(matched) * bs)
-            token = int(logits[0].argmax())
-            first = time.perf_counter()
-            self.alloc.register(ids, bs, blocks)
-            self.prompt_tokens += n
-            self.cached_tokens += len(matched) * bs
-            if token == self.eos_id or request.max_new <= 1 or n >= total:
-                for b in blocks:
-                    self.alloc.free(b)
-                future.set_result({"tokens": 1, "first_token_at": first, "ids": [token]})
-                return True
-            seq = PagedSequence(future, n, total, request.max_new, [token], first, token, blocks)
-            self.active.append(seq)
-        except Exception as e:  # report the failure to the caller, keep the server alive
-            for b in blocks:
-                self.alloc.free(b)
-            future.set_exception(e)
-        return True
+    def _match(self, ids, bs, limit):
+        return self.alloc.match(ids, bs, limit)
+
+    def _prefill(self, ids, blocks, start):
+        return prefill_paged(self.model, self.pool, ids, blocks, start)[0]
+
+    def _register(self, ids, bs, blocks, matched, n):
+        self.alloc.register(ids, bs, blocks)
+        self.prompt_tokens += n
+        self.cached_tokens += matched * bs
