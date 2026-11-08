@@ -1,12 +1,20 @@
 # Changelog
 
+## v0.9.0 - Phase 9: Inference engine core
+- Closed-loop benchmark harness (N concurrent clients: throughput, p50/p95 latency, time to first token, GPU memory) and a baseline engine that serves one request at a time
+- Continuous batching over a slot pool: 3.1x throughput at 4 clients and 5.4x at 16, p50 latency at 16 clients 10.2 s to 0.9 s, outputs identical to the baseline on 64 real prompts
+- Paged KV cache with block tables and a block allocator: 4x less KV memory reserved (0.81 to 0.20 GB) for 4 to 6% lower throughput, fragmentation under 2%
+- Prefix cache (hash-chained blocks, refcounts, LRU eviction): 89% of prompt tokens reused on clustered workloads, first token 3.3x faster and throughput 1.15 to 1.33x on CPU, peak KV memory up to 4x lower on GPU
+- Request lifecycle: cancel, timeout, refusal of oversized prompts, preemption by recompute under memory pressure, a failure guard. A 60-request stress mix leaves every block free
+- All numbers come from interleaved A/B runs and are collected into benchmarks/engine_table.md
+
 ## v0.8.0 - Phase 8: Evaluation harness
 - Every accuracy number is now produced by a script: `scripts/collect_benchmarks.py` rebuilds `benchmarks/accuracy.json` from saved per-question records (Spider dev, five stages from 4.8% to 35.3%)
 - Rule-based failure taxonomy (`eval/taxonomy.py`) with a 40-item review: 71.5% of the 667 failures are table or join choice. Write-up in docs/error_analysis.md
 - CI smoke test: 30 synthetic questions on small SQLite files, run on CPU against the published weights on every push to main (30 of 30, about 1 minute)
 - `scripts/ask.py` quick start verified in a clean environment, and the README rewritten with results, limits and quick start
 
-## v0.7.0 - Phase 9: Inference engine
+## v0.7.0 - Decoding stack: KV cache, constrained decoding, execution-guided vote
 - KV cache decoding that reproduces uncached predictions exactly (0 of 100 differ) at 1.9x speed; training and eval paths untouched (141 tests pass)
 - Schema-constrained decoding: words limited to SQL words, schema words and aliases. Spider dev 21.5% to 26.2%, and the glued-keyword bug is gone
 - Batched sampling with execution-guided vote (8 candidates in one batch, errors and empty results dropped, majority result wins): Spider dev 26.2% to 35.3%, 20 minutes for the full set. Temperature and sample count tuned on 16 held-out databases, not on dev

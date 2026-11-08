@@ -73,6 +73,19 @@ This is Spider's `concert_singer` database. Decoding takes roughly 3 seconds per
    an SQL word, a schema word or an alias), and batched sampling with an execution-guided
    vote.
 
+## Serving engine
+
+A from-scratch serving engine (`engine/`) with the core optimizations of a modern LLM server. Each one is benchmarked against its predecessor on the same machine with interleaved A/B runs (`benchmarks/engine_table.md`). Hardware: a laptop RTX 4050 and an 8-thread CPU, greedy decoding of Spider dev prompts.
+
+| Feature | What it does | Measured result |
+|---|---|---|
+| Continuous batching | Requests join and leave a running batch at every step | 3.1x throughput at 4 clients, 5.4x at 16; p50 latency at 16 clients 10.2 s to 0.9 s |
+| Paged KV cache | Fixed-size blocks and block tables instead of one 2048-token slot per request | 4x less KV memory reserved (0.81 to 0.20 GB), 4 to 6% lower throughput, fragmentation under 2% |
+| Prefix cache | Hash-chained blocks shared between requests with the same schema | 89% of prompt tokens reused; on CPU first token 3.3x faster and throughput 1.15 to 1.33x; on GPU peak KV memory up to 4x lower |
+| Request lifecycle | Cancel, timeout, refusal of oversized prompts, preemption under memory pressure | A 60-request stress mix leaves every block free |
+
+Every engine reproduces the baseline's tokens exactly on 64 real prompts. Limits: attention gathers K and V through the block tables and then runs standard masked attention (no fused kernel yet), the engines decode greedily, and the constrained decoding and sampling vote that give the accuracy results live in `infer/` and are not integrated into the engine yet. Throughput numbers move by up to about 25% between sessions on a laptop, which is why the comparisons are interleaved ratios.
+
 ## Limitations
 
 - A small model with little multi-table training data. Most remaining failures pick the
@@ -92,6 +105,7 @@ data/        cleaning, synthetic data, prompt  train/     trainer, SFT, augmenta
 eval/        executor, comparator, Spider      infer/     KV cache, constraint, sampling
 scripts/     one-command entry points          benchmarks/  machine-generated results
 docs/        results, experiments, model card  tests/     unit tests
+engine/      serving engine: batching, paged KV cache, prefix cache
 ```
 
 Version history is in `CHANGELOG.md`.
