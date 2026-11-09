@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import torch
 import torch.nn.functional as F
 
-from infer.engine import KVCache
+from infer.engine import KVCache, pick
 from model.layers import apply_rope
 
 
@@ -136,6 +136,8 @@ class PagedSequence:
     next_token: int
     blocks: list
     alive: bool = True
+    constraint: object = None
+    temperature: float = 0.0
 
 
 class PagedServer:
@@ -158,6 +160,7 @@ class PagedServer:
         max_seqs=16,
         max_len=None,
         max_admit=4,
+        seed=0,
     ):
         self.model, self.eos_id, self.device = model.eval(), eos_id, device
         self.max_len = max_len or model.cfg.max_seq_len
@@ -172,6 +175,8 @@ class PagedServer:
         self.peak_cap = self.peak_used = 0
         self.preemptions = 0
         self.timeouts = 0
+        self.gen = torch.Generator(device=device)
+        self.gen.manual_seed(seed)
         self.queue = queue.Queue()
         self.worker = threading.Thread(target=self._run, daemon=True)
         self.worker.start()
@@ -217,6 +222,30 @@ class PagedServer:
 
     def _register(self, ids, bs, blocks, matched, n):
         pass
+
+    def _pick_tokens(self, logits, constraints, temps):
+        """Next token for each row: the best one, or a sample, that its constraint accepts."""
+        if all(c is None for c in constraints) and not any(temps):
+            return logits.argmax(-1).tolist()
+        width = min(64, logits.shape[-1])
+        vals, idx = torch.topk(logits.float(), width, dim=-1)
+        order = torch.arange(width, device=logits.device)[None, :].expand(len(temps), -1)
+        if any(temps):
+            heat = torch.tensor([max(t, 1e-6) for t in temps], device=logits.device)
+            weights = torch.softmax(vals / heat[:, None], dim=-1) + 1e-9
+            sampled = torch.multinomial(weights, width, generator=self.gen)
+            hot = torch.tensor([t > 0 for t in temps], device=logits.device)
+            order = torch.where(hot[:, None], sampled, order)
+        tries = torch.gather(idx, 1, order).tolist()
+        chosen = []
+        for row, con in enumerate(constraints):
+            token = next((c for c in tries[row] if con is None or con.accepts(c)), None)
+            if token is None:
+                token = pick(logits[row].float(), con)
+            if con is not None and token != self.eos_id:
+                con.advance(token)
+            chosen.append(token)
+        return chosen
 
     def _run(self):
         try:
@@ -332,8 +361,12 @@ class PagedServer:
             total = min(n + request.max_new, self.max_len)
             for _ in range(need - len(matched)):
                 blocks.append(self.alloc.allocate())
+            constraint = getattr(request, "constraint", None)
+            temperature = getattr(request, "temperature", 0.0)
+            if constraint is not None:
+                constraint.reset()
             logits = self._prefill(ids, blocks, len(matched) * bs)
-            token = int(logits.argmax())
+            token = self._pick_tokens(logits[None], [constraint], [temperature])[0]
             first = time.perf_counter()
             self._register(ids, bs, blocks, len(matched), n)
             if token == self.eos_id or request.max_new <= 1 or n >= total:
@@ -342,7 +375,17 @@ class PagedServer:
                 settle(future, {"tokens": 1, "first_token_at": first, "ids": [token]})
                 return True
             seq = PagedSequence(
-                request, future, n, total, request.max_new, [token], first, token, blocks
+                request,
+                future,
+                n,
+                total,
+                request.max_new,
+                [token],
+                first,
+                token,
+                blocks,
+                constraint=constraint,
+                temperature=temperature,
             )
             self.active.append(seq)
         except Exception as e:  # report the failure to the caller, keep the server alive
@@ -386,7 +429,8 @@ class PagedServer:
         positions = torch.tensor([s.pos for s in ready], device=self.device)
         try:
             logits = decode_step_paged(self.model, self.pool, tokens, tables, positions)
-            chosen = logits.argmax(-1).tolist()
+            constraints = [s.constraint for s in ready]
+            chosen = self._pick_tokens(logits, constraints, [s.temperature for s in ready])
         except Exception as e:
             for s in ready:
                 settle(s.future, error=e)

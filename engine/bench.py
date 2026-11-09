@@ -10,6 +10,8 @@ class Request:
     ids: list
     max_new: int = 128
     timeout: float | None = None
+    constraint: object = None
+    temperature: float = 0.0
 
 
 def percentile(values, q):
