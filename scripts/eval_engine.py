@@ -13,6 +13,7 @@ from engine.prefix import PrefixServer
 from eval.compare import exec_match
 from eval.spider import db_file, schema_statements
 from infer.constrain import token_texts
+from infer.quantize import quantize_int8
 from scripts.ask import load
 from scripts.collect_benchmarks import summarize
 from tokenizer.special_tokens import EOS_ID
@@ -48,11 +49,14 @@ def main():
     p.add_argument("--slots", type=int, default=64)
     p.add_argument("--blocks", type=int, default=2048)
     p.add_argument("--compare", default=None, help="saved run to count differing predictions")
+    p.add_argument("--int8", action="store_true")
     p.add_argument("--name", default="engine_vote")
     args = p.parse_args()
     faulthandler.dump_traceback_later(7200, exit=True)
 
     model, tok = load(args.weights, args.device)
+    if args.int8:
+        model = quantize_int8(model)
     texts = token_texts(tok)
     server = PrefixServer(model, EOS_ID, args.device, num_blocks=args.blocks, max_seqs=args.slots)
     pipeline = SqlPipeline(
@@ -98,6 +102,7 @@ def main():
     summary.update(
         {
             "clients": args.clients,
+            "int8": args.int8,
             "samples": args.samples,
             "wall_seconds": round(wall),
             "questions_per_second": round(len(items) / wall, 2),

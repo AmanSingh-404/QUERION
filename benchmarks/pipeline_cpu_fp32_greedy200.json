@@ -1,0 +1,29 @@
+{
+  "items": 200,
+  "matches": 48,
+  "exec_accuracy": 0.24,
+  "std_error": 0.0302,
+  "exec_accuracy_nonempty_gold": 0.2335,
+  "status": {
+    "match": 48,
+    "pred_error": 117,
+    "mismatch": 34,
+    "gold_error": 1
+  },
+  "error_types": {
+    "unknown column": 101,
+    "syntax error": 9,
+    "unknown table": 6,
+    "other error": 1
+  },
+  "clients": 4,
+  "int8": false,
+  "samples": 1,
+  "wall_seconds": 130,
+  "questions_per_second": 1.54,
+  "latency_p50": 1.69,
+  "latency_p95": 6.62,
+  "prefix_hit_rate": 0.875,
+  "preemptions": 0,
+  "kv_peak_used_gb": 0.048
+}
