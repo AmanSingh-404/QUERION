@@ -7,7 +7,10 @@ execution vote, decoded by the engine (prefix cache on). Latency is per question
 | Run | Questions | Clients | Samples | int8 | Accuracy (matches) | Questions/s | Latency p50 (s) | Latency p95 (s) | Prefix hit rate | Peak GPU (GB) |
 |---|---|---|---|---|---|---|---|---|---|---|
 | full_greedy | 1034 | 16 | 1 | no | 26.2% (271) | 7.29 | 1.62 | 4.91 | 94% | 1.28 |
+| full_vote_k2 | 1034 | 16 | 2 | no | 28.6% (296) | 9.22 | 1.41 | 3.94 | 96% | 1.33 |
+| full_vote_k4 | 1034 | 16 | 4 | no | 31.7% (328) | 5.47 | 2.35 | 7.99 | 97% | 1.44 |
 | full_vote | 1034 | 16 | 8 | no | 34.6% (358) | 2.05 | 6.41 | 19.30 | 97% | 1.47 |
+| full_vote_k16 | 1034 | 16 | 16 | no | 37.1% (384) | 1.05 | 10.76 | 41.88 | 98% | 1.47 |
 | cpu_fp32_greedy200 | 200 | 4 | 1 | no | 24.0% (48) | 1.54 | 1.69 | 6.62 | 88% | - |
 | cpu_int8_greedy200 | 200 | 4 | 1 | yes | 23.5% (47) | 1.78 | 1.72 | 5.13 | 88% | - |
 | vote100_c1 | 100 | 1 | 8 | no | 28.0% (28) | 0.50 | 1.49 | 4.74 | 96% | 1.28 |
