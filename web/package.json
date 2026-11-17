@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "papaparse": "^5.7.1",
+    "sql.js": "^1.16.0"
+  },
+  "devDependencies": {
+    "@types/papaparse": "^5.5.2",
+    "@types/sql.js": "^1.4.11",
+    "vitest": "^5.1.0"
+  },
+  "scripts": {
+    "test": "vitest run"
+  }
+}

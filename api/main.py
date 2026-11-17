@@ -20,7 +20,10 @@ def build(args):
     server = PrefixServer(model, EOS_ID, args.device, num_blocks=args.blocks, max_seqs=args.slots)
     service = EngineService(server, tok, token_texts(tok), EOS_ID)
     samples = args.samples or (8 if args.device == "cuda" else 4)
-    settings = Settings(origins=args.origins.split(","), default_samples=samples)
+    max_samples = 16 if args.device == "cuda" else 8
+    settings = Settings(
+        origins=args.origins.split(","), default_samples=samples, max_samples=max_samples
+    )
     return create_app(service, settings)
 
 

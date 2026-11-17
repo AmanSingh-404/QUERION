@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.10.0 - Engine advanced features and the HTTP API
+- Constrained and sampled decoding inside the serving engine: Spider dev through the engine reproduces the offline accuracy (greedy 26.2% with all 1,034 predictions identical to the offline run, 8-sample vote about 35%) at roughly 5.5x and 2.7x the throughput
+- Samples quality dial on the full dev set: 26.2% (1 sample), 28.6% (2), 31.7% (4), 34.6% (8), 37.1% (16), about +2.5 to 3 points per doubling
+- int8 dynamic quantization for CPU: about 15% faster, equal accuracy on average in a paired check on 200 questions
+- HTTP service (FastAPI): candidates streamed over server-sent events, per-IP rate limit, request limits, locked CORS, feedback endpoint. The browser runs the execution vote, so user data never reaches the server
+- Dockerfile for a CPU Hugging Face Space
+
 ## v0.9.0 - Phase 9: Inference engine core
 - Closed-loop benchmark harness (N concurrent clients: throughput, p50/p95 latency, time to first token, GPU memory) and a baseline engine that serves one request at a time
 - Continuous batching over a slot pool: 3.1x throughput at 4 clients and 5.4x at 16, p50 latency at 16 clients 10.2 s to 0.9 s, outputs identical to the baseline on 64 real prompts

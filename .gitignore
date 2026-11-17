@@ -6,6 +6,10 @@ __pycache__/
 # C extensions
 *.so
 
+web/node_modules/
+web/.next/
+web/.env*.local
+
 # Distribution / packaging
 .Python
 build/
