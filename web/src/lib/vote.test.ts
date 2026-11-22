@@ -23,22 +23,22 @@ const results: Record<string, RunResult> = {
   "SELECT a DESC": rows([2], [1]),
   "SELECT one": rows([1]),
 };
-const run = (sql: string): RunResult => results[sql];
+const run = async (sql: string): Promise<RunResult> => results[sql];
 
 describe("chooseCandidate", () => {
-  it("ignores errors and empty results and takes the majority", () => {
+  it("ignores errors and empty results and takes the majority", async () => {
     const candidates = ["SELECT bad", "SELECT none", "SELECT one", "SELECT a", "SELECT a DESC"];
-    const picked = chooseCandidate(candidates, run);
+    const picked = await chooseCandidate(candidates, run);
     expect(picked).toEqual({ index: 3, sql: "SELECT a", agree: 2, ran: 4 });
   });
 
-  it("breaks ties toward the earliest candidate", () => {
-    expect(chooseCandidate(["SELECT one", "SELECT a"], run)?.index).toBe(0);
+  it("breaks ties toward the earliest candidate", async () => {
+    expect((await chooseCandidate(["SELECT one", "SELECT a"], run))?.index).toBe(0);
   });
 
-  it("falls back to the first candidate when nothing runs, and to null with none", () => {
-    const fallback = chooseCandidate(["SELECT bad", null], run);
+  it("falls back to the first candidate when nothing runs, and to null with none", async () => {
+    const fallback = await chooseCandidate(["SELECT bad", null], run);
     expect(fallback).toEqual({ index: 0, sql: "SELECT bad", agree: 0, ran: 0 });
-    expect(chooseCandidate([null, null], run)).toBeNull();
+    expect(await chooseCandidate([null, null], run)).toBeNull();
   });
 });

@@ -1,5 +1,5 @@
 export type RunResult = { rows: unknown[][] } | { error: string };
-export type Runner = (sql: string) => RunResult;
+export type Runner = (sql: string) => Promise<RunResult>;
 export type Vote = { index: number; sql: string; agree: number; ran: number };
 
 function cell(value: unknown): string {
@@ -22,15 +22,19 @@ export function signature(rows: unknown[][]): string {
  * The execution-guided vote, the same rule as the Python version: drop candidates that fail or
  * return nothing, take the result most candidates agree on, and break ties toward the earliest.
  */
-export function chooseCandidate(candidates: (string | null)[], run: Runner): Vote | null {
+export async function chooseCandidate(
+  candidates: (string | null)[],
+  run: Runner,
+): Promise<Vote | null> {
   const runs: { index: number; sig: string; empty: boolean }[] = [];
-  candidates.forEach((sql, index) => {
-    if (!sql) return;
-    const result = run(sql);
+  for (let index = 0; index < candidates.length; index++) {
+    const sql = candidates[index];
+    if (!sql) continue;
+    const result = await run(sql);
     if ("rows" in result) {
       runs.push({ index, sig: signature(result.rows), empty: result.rows.length === 0 });
     }
-  });
+  }
   if (runs.length === 0) {
     const first = candidates.findIndex((sql) => !!sql);
     if (first < 0) return null;

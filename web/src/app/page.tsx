@@ -2,12 +2,11 @@
 
 import Papa from "papaparse";
 import { useRef, useState } from "react";
-import type { Database } from "sql.js";
 
 import { generate } from "@/lib/api";
 import { API_URL } from "@/lib/config";
-import { type QueryResult, type Table, buildDatabase, runQuery } from "@/lib/db";
 import { createStatement, inferColumns, safeName } from "@/lib/schema";
+import { type QueryResult, SqlSession, type Table } from "@/lib/sqlsession";
 import { type Vote, chooseCandidate } from "@/lib/vote";
 
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -93,7 +92,7 @@ export default function Home() {
   const [sql, setSql] = useState("");
   const [result, setResult] = useState<QueryResult | null>(null);
   const [rated, setRated] = useState("");
-  const dbRef = useRef<Database | null>(null);
+  const sessionRef = useRef<SqlSession | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   function clearAnswer() {
@@ -123,9 +122,9 @@ export default function Home() {
     try {
       const name = safeName(fileName.replace(/\.[^.]+$/, ""), "data");
       const next: Table = { name, columns: inferColumns(header, rows), rows };
-      const db = await buildDatabase(next);
-      dbRef.current?.close();
-      dbRef.current = db;
+      const session = sessionRef.current ?? new SqlSession();
+      await session.load(next);
+      sessionRef.current = session;
       setTable(next);
       clearAnswer();
     } catch (e) {
@@ -150,8 +149,8 @@ export default function Home() {
   }
 
   async function ask() {
-    const db = dbRef.current;
-    if (!table || !db || !question.trim() || busy) return;
+    const session = sessionRef.current;
+    if (!table || !session || !question.trim() || busy) return;
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -167,7 +166,8 @@ export default function Home() {
       let final: (string | null)[] = [];
       for await (const event of generate(API_URL, body, controller.signal)) {
         if (event.type === "candidate") {
-          const entry = { index: event.index, sql: event.sql, result: runQuery(db, event.sql) };
+          const outcome = await session.run(event.sql);
+          const entry = { index: event.index, sql: event.sql, result: outcome };
           setCandidates((previous) => [...previous, entry]);
           setStatus("Candidates are arriving...");
         } else if (event.type === "done") {
@@ -175,13 +175,13 @@ export default function Home() {
         }
       }
       setStatus("Voting...");
-      const picked = chooseCandidate(final, (query) => runQuery(db, query));
+      const picked = await chooseCandidate(final, (query) => session.run(query));
       if (!picked) {
         setError("The model did not return a query. Try rephrasing the question.");
       } else {
         setVote(picked);
         setSql(picked.sql);
-        setResult(runQuery(db, picked.sql));
+        setResult(await session.run(picked.sql));
       }
     } catch (e) {
       if (controller.signal.aborted) return;
@@ -194,9 +194,9 @@ export default function Home() {
     }
   }
 
-  function runEdited() {
-    const db = dbRef.current;
-    if (db) setResult(runQuery(db, sql));
+  async function runEdited() {
+    const session = sessionRef.current;
+    if (session) setResult(await session.run(sql));
   }
 
   function exportCsv() {
@@ -336,7 +336,7 @@ export default function Home() {
                 onChange={(e) => setSql(e.target.value)}
               />
               <div className="flex flex-wrap gap-2">
-                <button type="button" className={button} onClick={runEdited}>
+                <button type="button" className={button} onClick={() => void runEdited()}>
                   Run
                 </button>
                 <button type="button" className={button} onClick={exportCsv}>
