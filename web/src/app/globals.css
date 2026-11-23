@@ -16,7 +16,7 @@ table { border-collapse: collapse; width: 100%; }
 th { font-weight: 400; color: var(--muted); }
 th, td { padding: 14px 12px 14px 0; border-top: 1px solid var(--line); text-align: left; font-size: 15px; white-space: nowrap; }
 
-.wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+.wrap { width: 100%; box-sizing: border-box; max-width: 1800px; margin: 0 auto; padding-left: clamp(24px, 5vw, 96px); padding-right: clamp(24px, 5vw, 96px); }
 .m { color: var(--muted); }
 .mo { font-family: var(--font-mono), monospace; font-size: 13px; }
 .sc { overflow-x: auto; }
