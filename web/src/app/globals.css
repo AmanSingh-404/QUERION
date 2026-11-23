@@ -102,3 +102,10 @@ th, td { padding: 14px 12px 14px 0; border-top: 1px solid var(--line); text-alig
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+
+.btn-good, .btn-bad { display: inline-flex; align-items: center; min-height: 40px; box-sizing: border-box; padding: 0 20px; border-radius: 999px; font: 500 14px var(--font-inter), sans-serif; cursor: pointer; transition: transform 0.4s var(--ease); }
+.btn-good { background: #15803d; color: #fff; border: 0; }
+.btn-bad { background: transparent; color: #b42318; border: 1.5px solid #b42318; }
+.btn-good:hover, .btn-bad:hover { transform: translateY(-2px); }
+.btn-good:disabled, .btn-bad:disabled { opacity: 0.45; cursor: default; transform: none; }

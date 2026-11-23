@@ -350,19 +350,20 @@ export default function Playground() {
                   aria-label="SQL"
                   onChange={(e) => setSql(e.target.value)}
                 />
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 28, margin: "20px 0" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 28, margin: "20px 0" }}>
                   <button type="button" className="lk" onClick={() => void runEdited()}>
                     Run
                   </button>
                   <button type="button" className="lk" onClick={exportCsv}>
                     Export CSV
                   </button>
-                  <button type="button" className="lk" disabled={!!rated} onClick={() => void rate("up")}>
+                  <button type="button" className="btn-good" disabled={!!rated} onClick={() => void rate("up")}>
                     Good answer
                   </button>
-                  <button type="button" className="lk" disabled={!!rated} onClick={() => void rate("down")}>
+                  <button type="button" className="btn-bad" disabled={!!rated} onClick={() => void rate("down")}>
                     Wrong answer
                   </button>
+                  {rated && <span className="m" style={{ fontSize: 14 }}>Thanks, that helps.</span>}
                 </div>
                 <ResultTable result={result} />
               </div>
