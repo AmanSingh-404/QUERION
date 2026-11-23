@@ -20,23 +20,35 @@ export default function Status() {
     };
   }, []);
 
+  const label = state.kind === "checking" ? "Checking" : state.kind === "up" ? "Up" : "Offline";
   return (
-    <main className="mx-auto max-w-4xl space-y-4 p-6">
-      <h1 className="text-3xl font-semibold">Status</h1>
-      {state.kind === "checking" && <p className="opacity-70">Checking the model server...</p>}
-      {state.kind === "down" && (
-        <p>
-          The live model server is offline. The playground still works with the recorded
-          examples.
-        </p>
-      )}
+    <main className="wrap" style={{ paddingBottom: 96 }}>
+      <section style={{ padding: "64px 0 48px" }}>
+        <h1 className="h1 u">Status</h1>
+      </section>
+      <div className="k u" style={{ animationDelay: ".2s", alignItems: "center" }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 12, color: "var(--ink)" }}>
+          <i
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: 5,
+              background: state.kind === "down" ? "var(--muted)" : "var(--orange)",
+              animation: state.kind === "down" ? undefined : "beat 2s ease-in-out infinite",
+            }}
+          />
+          Model server
+        </span>
+        <span>{label}</span>
+      </div>
+      <div className="k u" style={{ animationDelay: ".3s" }}>
+        <span>When offline</span>
+        <span>The playground shows recorded examples.</span>
+      </div>
       {state.kind === "up" && (
-        <div className="space-y-2">
-          <p>The live model server is up.</p>
-          <pre className="overflow-x-auto rounded border p-3 text-sm">
-            {JSON.stringify(state.body, null, 2)}
-          </pre>
-        </div>
+        <pre className="mo" style={{ marginTop: 24 }}>
+          {JSON.stringify(state.body, null, 2)}
+        </pre>
       )}
     </main>
   );

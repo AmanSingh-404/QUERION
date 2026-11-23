@@ -1,46 +1,26 @@
-export const metadata = { title: "How it works · QUERION" };
+export const metadata = { title: "How it works · querion" };
 
 const steps = [
-  [
-    "The model",
-    "A 101M-parameter decoder-only transformer (12 layers, 4 KV heads, RoPE, SwiGLU) trained from scratch on one laptop GPU: 2B tokens of pretraining, then supervised fine-tuning on text-to-SQL pairs.",
-  ],
-  [
-    "Schema-constrained decoding",
-    "While generating, only tokens that keep the query valid against your table definition are allowed. This took Spider dev from 21.5% to 26.2%.",
-  ],
-  [
-    "Several candidates",
-    "The server samples several queries for your question (1, 4 or 8 in the playground).",
-  ],
-  [
-    "Execution-guided vote, in your browser",
-    "Each candidate runs against your data in a SQLite database inside a Web Worker. Candidates that fail or return nothing are dropped and the result most candidates agree on wins. Ties go to the earliest. Eight samples took Spider dev to about 35%.",
-  ],
-  [
-    "Your data stays with you",
-    "Your CSV is loaded into the browser only. The server receives the table definition and your question, never the rows. Queries are read-only, one statement at a time, and stopped after 5 seconds.",
-  ],
-  [
-    "The serving engine",
-    "Continuous batching, a paged KV cache and a prefix cache, all tested to give byte-identical output to the simple server. See the benchmarks page for the measured effect of each.",
-  ],
+  "A 101M-parameter model, trained from scratch on one laptop GPU, then fine-tuned on text-to-SQL pairs.",
+  "Decoding is limited to tokens that fit your table definition. Spider dev: 21.5% to 26.2%.",
+  "The server samples several candidate queries: 1, 4 or 8.",
+  "Each candidate runs on your data in the browser. Errors and empty results drop out; the majority result wins.",
+  "The server never sees your rows. Queries are read-only, one statement, stopped after 5 seconds.",
+  "A custom engine serves it: continuous batching, paged KV cache and prefix cache, checked for identical output.",
 ];
 
 export default function HowItWorks() {
   return (
-    <main className="mx-auto max-w-4xl space-y-6 p-6">
-      <h1 className="text-3xl font-semibold">How it works</h1>
-      <ol className="space-y-4">
-        {steps.map(([title, text], i) => (
-          <li key={title} className="rounded border border-black/10 p-4 dark:border-white/20">
-            <h2 className="font-medium">
-              {i + 1}. {title}
-            </h2>
-            <p className="mt-1 text-sm opacity-80">{text}</p>
-          </li>
-        ))}
-      </ol>
+    <main className="wrap" style={{ paddingBottom: 96 }}>
+      <section style={{ padding: "64px 0 48px" }}>
+        <h1 className="h1 u">How it works</h1>
+      </section>
+      {steps.map((text, i) => (
+        <div className="k u" key={i} style={{ animationDelay: `${0.2 + i * 0.1}s` }}>
+          <span className="mo">{String(i + 1).padStart(2, "0")}</span>
+          <span style={{ flex: 1, minWidth: 240 }}>{text}</span>
+        </div>
+      ))}
     </main>
   );
 }

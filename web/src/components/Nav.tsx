@@ -1,21 +1,26 @@
 import Link from "next/link";
 
 const links = [
-  ["/", "Playground"],
+  ["/playground", "Playground"],
   ["/benchmarks", "Benchmarks"],
   ["/how-it-works", "How it works"],
-  ["/model-card", "Model card"],
+  ["/model-card", "Model"],
   ["/status", "Status"],
 ] as const;
 
 export default function Nav() {
   return (
-    <nav className="mx-auto flex max-w-4xl flex-wrap gap-4 p-6 pb-0 text-sm">
-      {links.map(([href, label]) => (
-        <Link key={href} href={href} className="underline-offset-4 hover:underline">
-          {label}
-        </Link>
-      ))}
-    </nav>
+    <header className="wrap hd u">
+      <Link href="/" className="logo">
+        querion
+      </Link>
+      <nav className="nav">
+        {links.map(([href, label]) => (
+          <Link key={href} href={href}>
+            {label}
+          </Link>
+        ))}
+      </nav>
+    </header>
   );
 }
