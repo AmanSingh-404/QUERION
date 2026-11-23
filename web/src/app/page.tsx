@@ -8,6 +8,7 @@ import { API_URL } from "@/lib/config";
 import { createStatement, inferColumns, safeName } from "@/lib/schema";
 import { type QueryResult, SqlSession, type Table } from "@/lib/sqlsession";
 import { type Vote, chooseCandidate } from "@/lib/vote";
+import { EXAMPLES, findExample } from "@/lib/examples";
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const MAX_ROWS = 20000;
@@ -92,6 +93,7 @@ export default function Home() {
   const [sql, setSql] = useState("");
   const [result, setResult] = useState<QueryResult | null>(null);
   const [rated, setRated] = useState("");
+  const [recorded, setRecorded] = useState(false);
   const sessionRef = useRef<SqlSession | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -102,6 +104,7 @@ export default function Home() {
     setSql("");
     setResult(null);
     setRated("");
+    setRecorded(false);
   }
 
   async function prepare(data: string[][], fileName: string) {
@@ -185,7 +188,15 @@ export default function Home() {
       }
     } catch (e) {
       if (controller.signal.aborted) return;
-      setError(friendly(e));
+      const known = table.name === "singer" ? findExample(question) : undefined;
+      if (known) {
+        setRecorded(true);
+        setVote({ index: 0, sql: known.sql, agree: 0, ran: 0 });
+        setSql(known.sql);
+        setResult(await session.run(known.sql));
+      } else {
+        setError(friendly(e));
+      }
     } finally {
       if (abortRef.current === controller) {
         setBusy(false);
@@ -271,6 +282,21 @@ export default function Home() {
       {table && (
         <section className={card}>
           <h2 className="font-medium">2. Your question</h2>
+          {table.name === "singer" && (
+            <div className="flex flex-wrap gap-2 text-xs">
+              <span className="opacity-70">Examples:</span>
+              {EXAMPLES.map((example) => (
+                <button
+                  key={example.question}
+                  type="button"
+                  className="rounded-full border px-2 py-0.5"
+                  onClick={() => setQuestion(example.question)}
+                >
+                  {example.question}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="flex flex-wrap gap-3">
             <input
               className="min-w-64 flex-1 rounded border p-2"
@@ -325,9 +351,11 @@ export default function Home() {
           {vote && result && (
             <div className="space-y-3">
               <p className="text-sm opacity-70">
-                {vote.ran === 0
-                  ? "None of the candidates ran, so this is the first one."
-                  : `${vote.agree} of ${vote.ran} runnable candidates returned this result.`}
+                {recorded
+                  ? "The live model is offline. This is a recorded answer the model gave for this exact question."
+                  : vote.ran === 0
+                    ? "None of the candidates ran, so this is the first one."
+                    : `${vote.agree} of ${vote.ran} runnable candidates returned this result.`}
               </p>
               <textarea
                 className="w-full rounded border p-2 font-mono text-sm"
