@@ -8,6 +8,11 @@ pretraining, fine-tuning, the evaluation harness and the decoding engine.
 
 Weights: https://huggingface.co/SinghBro/querion-100m-sql
 
+Live demo: https://querion-gilt.vercel.app. Upload a CSV, ask a question in plain English,
+and the model's candidate queries run on your data inside your browser. The model server
+runs on my laptop, so the live model is only up when I am demoing. When it is offline the
+playground still answers the two example questions from recorded outputs and says so.
+
 ## Results
 
 Spider dev (1,034 questions), plain execution accuracy on the original dev databases.
@@ -84,7 +89,40 @@ A from-scratch serving engine (`engine/`) with the core optimizations of a moder
 | Prefix cache | Hash-chained blocks shared between requests with the same schema | 89% of prompt tokens reused; on CPU first token 3.3x faster and throughput 1.15 to 1.33x; on GPU peak KV memory up to 4x lower |
 | Request lifecycle | Cancel, timeout, refusal of oversized prompts, preemption under memory pressure | A 60-request stress mix leaves every block free |
 
-Every engine reproduces the baseline's tokens exactly on 64 real prompts. Limits: attention gathers K and V through the block tables and then runs standard masked attention (no fused kernel yet), the engines decode greedily, and the constrained decoding and sampling vote that give the accuracy results live in `infer/` and are not integrated into the engine yet. Throughput numbers move by up to about 25% between sessions on a laptop, which is why the comparisons are interleaved ratios.
+Every engine reproduces the baseline's tokens exactly on 64 real prompts. Limits: attention
+gathers K and V through the block tables and then runs standard masked attention (no fused
+kernel yet). Throughput numbers move by up to about 25% between sessions on a laptop, which
+is why the comparisons are interleaved ratios.
+
+Schema-constrained decoding and sampling now run inside the engine (`engine/pipeline.py`).
+Through the engine, with a prefix cache hit rate of 94 to 98%, the full 1,034-question Spider
+dev run gives:
+
+| Samples | Execution accuracy | Questions/s (16 clients) | Latency p50 |
+|---|---|---|---|
+| 1 (greedy) | 26.2% | 7.29 | 1.6 s |
+| 2 | 28.6% | 9.22 | 1.4 s |
+| 4 | 31.7% | 5.47 | 2.4 s |
+| 8 | 34.6% | 2.05 | 6.4 s |
+| 16 | 37.1% | 1.05 | 10.8 s |
+
+That is about 4.7x (greedy) and 2.4x (8-sample vote) the throughput of the offline decoder
+on the same machine. Accuracy rises by about 2.5 to 3 points per doubling of samples.
+int8 dynamic quantization of the Linear layers cuts CPU weight memory (about 175 MB against
+404 MB, estimated, not measured) and was about 15% faster on a 200-question CPU run,
+with 23.5% against 24.0% accuracy for fp32, within noise for that sample size.
+
+## API and web playground
+
+`api/` is a FastAPI service with `POST /generate` (candidate queries streamed as server-sent
+events), `GET /health`, `GET /metrics` and `POST /feedback`. It limits statements, schema size
+and prompt length and rate-limits per IP. Run it with `python -m api.main` (port 7860).
+
+`web/` is a Next.js site (`web/`, TypeScript). The server never sees table rows: the browser
+sends only the CREATE TABLE definition and the question, loads your CSV into SQLite
+(sql.js) in a Web Worker, runs every candidate there with a 5 second limit, and applies the
+execution-guided vote itself. The benchmark pages are generated from `benchmarks/*.json`
+(`npm run sync-data`).
 
 ## Limitations
 
@@ -96,6 +134,7 @@ Every engine reproduces the baseline's tokens exactly on 64 real prompts. Limits
 - English only, SQLite dialect, and no retry on database error messages yet.
 - Do not run generated SQL on a database you cannot afford to change. The evaluation uses
   read-only connections.
+- The live demo depends on a laptop being on. The site and recorded examples are always up.
 
 ## Repository
 
@@ -106,6 +145,8 @@ eval/        executor, comparator, Spider      infer/     KV cache, constraint, 
 scripts/     one-command entry points          benchmarks/  machine-generated results
 docs/        results, experiments, model card  tests/     unit tests
 engine/      serving engine: batching, paged KV cache, prefix cache
+api/         HTTP service                       web/       Next.js site and playground
+docker/      pinned requirements                space/     Dockerfile for a container host
 ```
 
 Version history is in `CHANGELOG.md`.
