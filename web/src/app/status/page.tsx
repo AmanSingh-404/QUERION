@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { API_URL } from "@/lib/config";
+import { TUNNEL_HEADERS } from "@/lib/api";
 
 type State = { kind: "checking" } | { kind: "up"; body: Record<string, unknown> } | { kind: "down" };
 
@@ -11,7 +12,7 @@ export default function Status() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_URL}/health`, { signal: AbortSignal.timeout(5000) })
+    fetch(`${API_URL}/health`, { signal: AbortSignal.timeout(5000), headers: TUNNEL_HEADERS })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("bad status"))))
       .then((body) => !cancelled && setState({ kind: "up", body }))
       .catch(() => !cancelled && setState({ kind: "down" }));

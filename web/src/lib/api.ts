@@ -5,6 +5,7 @@ export type GenerateEvent =
   | { type: "done"; candidates: (string | null)[]; seconds: number };
 
 export type GenerateBody = { tables: string[]; question: string; samples?: number };
+export const TUNNEL_HEADERS = { "ngrok-skip-browser-warning": "1" };
 
 /** One server-sent event block ("event: name" and "data: json") as a typed event. */
 export function parseEvent(raw: string): GenerateEvent | null {
@@ -26,7 +27,7 @@ export async function* generate(
 ): AsyncGenerator<GenerateEvent> {
   const response = await fetch(`${baseUrl}/generate`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...TUNNEL_HEADERS },
     body: JSON.stringify(body),
     signal,
   });

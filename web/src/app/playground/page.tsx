@@ -3,7 +3,7 @@
 import Papa from "papaparse";
 import { useRef, useState } from "react";
 
-import { generate } from "@/lib/api";
+import { TUNNEL_HEADERS, generate } from "@/lib/api";
 import { API_URL } from "@/lib/config";
 import { EXAMPLES, findExample } from "@/lib/examples";
 import { createStatement, inferColumns, safeName } from "@/lib/schema";
@@ -210,7 +210,7 @@ export default function Playground() {
     try {
       await fetch(`${API_URL}/feedback`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", ...TUNNEL_HEADERS },
         body: JSON.stringify({ question, sql, verdict }),
       });
     } catch {

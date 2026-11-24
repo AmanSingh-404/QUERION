@@ -89,7 +89,7 @@ def create_app(service, settings=None):
         CORSMiddleware,
         allow_origins=settings.origins,
         allow_methods=["GET", "POST"],
-        allow_headers=["content-type"],
+        allow_headers=["content-type", "ngrok-skip-browser-warning"],
     )
     limiter = RateLimiter(settings.rate_per_minute)
     counters = defaultdict(int)
