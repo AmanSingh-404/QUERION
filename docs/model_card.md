@@ -15,6 +15,11 @@ A 101,026,560-parameter decoder-only language model trained from scratch for
 text-to-SQL, on a single laptop GPU (RTX 4050, 6 GB). Code, training logs and
 evaluation harness: https://github.com/AmanSingh-404/QUERION
 
+Live demo: https://querion-gilt.vercel.app. Upload a CSV and ask a question in plain English.
+The model server runs on the author's laptop, so it is only up when a demo is running. When
+it is offline the site still answers its example questions from recorded model outputs and
+says so.
+
 ## Architecture
 
 12 layers, grouped-query attention (12 query heads, 4 KV heads), RoPE, RMSNorm,
@@ -80,3 +85,11 @@ A small model with little multi-table training data. It reads schemas it has see
 far better than new ones (91% vs 18% in an earlier probe), often invents column names,
 and is not a general-purpose assistant. Do not run its SQL on databases you cannot
 afford to change, and always run it on read-only connections first.
+
+
+
+## License
+
+The code is MIT licensed (see the GitHub repo). The weights have no license yet: they were
+trained on data from Spider, Gretel, FineWeb-Edu and The Stack, and I am still checking
+their terms. Until one is chosen, please ask before reusing them.
