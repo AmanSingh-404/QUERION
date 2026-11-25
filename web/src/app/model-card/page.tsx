@@ -7,7 +7,7 @@ const facts = [
   ["Pretraining", "2B tokens: 59% FineWeb-Edu, 40% Stack SQL, 1% pairs"],
   ["Fine-tuning", "Text-to-SQL pairs with identifier augmentation"],
   ["Hardware", "One laptop RTX 4050, 6 GB"],
-  ["License", "Not yet set. Training data licenses are still being checked."],
+  ["License", "Code: MIT. Weights: license not yet chosen while the training data licenses are checked."],
 ];
 
 export default function ModelCard() {

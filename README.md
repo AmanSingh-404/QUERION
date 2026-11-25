@@ -136,6 +136,12 @@ execution-guided vote itself. The benchmark pages are generated from `benchmarks
   read-only connections.
 - The live demo depends on a laptop being on. The site and recorded examples are always up.
 
+## License
+
+The code is MIT licensed (see `LICENSE`). The model weights have no license yet: the training
+data comes from Spider, Gretel, FineWeb-Edu and The Stack, and I am checking their terms
+before choosing one.
+
 ## Repository
 
 ```
