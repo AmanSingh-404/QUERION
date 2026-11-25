@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.11.0 - The website, the redesign and a live demo
+- New site design: minimal, off-white with an orange accent, animated with CSS only. Landing page with a typed-SQL demo, count-up stats and an accuracy ladder, plus playground, benchmarks, how-it-works, model card and status pages
+- Benchmark pages are generated from benchmarks/*.json (`npm run sync-data`), so no number on the site is typed by hand
+- Offline mode: when the API is unreachable the playground answers the two example questions from recorded model outputs and says so; other questions show a clear "model offline" message
+- Deployed on Vercel. The model server runs on a laptop behind a permanent ngrok domain, so the live model is up only when the laptop is. The site sends the ngrok-skip-browser-warning header and the API allows it in CORS
+- Playground polish: green Good answer and red Wrong answer buttons, full-width layout, page title and description fixed
+- README: live demo link, full-dev-set pipeline results through the engine, API and web sections. The code is MIT licensed; the weights license is still open while the training data terms are checked
+
 ## v0.10.0 - Engine advanced features, the HTTP API and the playground
 - Constrained and sampled decoding inside the serving engine: Spider dev through the engine reproduces the offline accuracy (greedy 26.2% with all 1,034 predictions identical to the offline run, 8-sample vote about 35%) at roughly 5.5x and 2.7x the throughput
 - Samples quality dial on the full dev set: 26.2% (1 sample), 28.6% (2), 31.7% (4), 34.6% (8), 37.1% (16), about +2.5 to 3 points per doubling
@@ -7,6 +15,7 @@
 - HTTP service (FastAPI): candidates streamed over server-sent events, per-IP rate limit, request limits, locked CORS, feedback endpoint. The browser runs the execution vote, so user data never reaches the server
 - Next.js playground: drop a CSV, SQLite in the browser (WebAssembly), streamed candidates, browser-side vote, editable query, result table, CSV export, feedback buttons
 - Dockerfile for a CPU container host
+- SQL runs in a Web Worker with a 5 second limit per query, so a runaway query cannot freeze the page
 
 ## v0.9.0 - Phase 9: Inference engine core
 - Closed-loop benchmark harness (N concurrent clients: throughput, p50/p95 latency, time to first token, GPU memory) and a baseline engine that serves one request at a time
